@@ -39,7 +39,7 @@ src/sim/        headless simulation core; its public API is src/sim/index.ts
   traffic/      signal controller and background vehicles (IDM, lane changes, junction reservations)
   pedestrians/  sidewalk navigation, crossing rules, jaywalking
   ego/          ego dynamics, route planning, observation building and feature encoding
-  platform/     platform profiles in real units (ideal, ...) and their conversion to sim units
+  platform/     platform profiles in real units (ideal, ...), their conversion to sim units, the actuator model
   agents/       DrivingAgent interface and built-in agents (rule-based, manual, idle)
   simulation/   CityWorld (background world), Simulation (adds the ego episode), config, diagnostics
   metrics/      episode metrics and the composite score
