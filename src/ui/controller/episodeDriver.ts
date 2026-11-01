@@ -1,6 +1,7 @@
 import { ManualAgent, type DrivingAgent, type ManualInput, type Observation, type Simulation } from '../../sim';
 import type { AgentKind } from '../settings';
 import { createAgent } from './agentFactory';
+import { RemoteAgent } from './remoteAgent';
 
 const RESTART_DELAY = 2.5;
 
@@ -13,14 +14,26 @@ export class EpisodeDriver {
   constructor(
     readonly sim: Simulation,
     kind: AgentKind,
+    remoteUrl: string,
   ) {
-    this.agent = createAgent(kind);
+    this.agent = createAgent(kind, sim, remoteUrl);
     this.newEpisode();
   }
 
-  setAgent(kind: AgentKind): void {
-    this.agent = createAgent(kind);
+  /** The remote decision model, when one drives (for its connection status). */
+  get remote(): RemoteAgent | null {
+    return this.agent instanceof RemoteAgent ? this.agent : null;
+  }
+
+  setAgent(kind: AgentKind, remoteUrl: string): void {
+    this.dispose();
+    this.agent = createAgent(kind, this.sim, remoteUrl);
     this.agent.reset?.();
+  }
+
+  /** Close the remote connection, if any. */
+  dispose(): void {
+    this.remote?.close();
   }
 
   newEpisode(): void {

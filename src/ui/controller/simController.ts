@@ -33,13 +33,15 @@ export class SimController {
       pedestrianCount: w.pedestrianCount,
       jaywalkProbability: w.jaywalkProbability,
     });
-    this.driver = new EpisodeDriver(sim, this.live.agent);
+    this.driver?.dispose();
+    this.driver = new EpisodeDriver(sim, this.live.agent, this.live.remoteUrl);
     this.loop = new FixedStepLoop(sim.config.dt);
     this.renderer.load(sim);
   }
 
   applyLive(live: LiveSettings): void {
-    if (live.agent !== this.live.agent) this.driver?.setAgent(live.agent);
+    const reconnect = live.agent === 'remote' && live.remoteUrl !== this.live.remoteUrl;
+    if (live.agent !== this.live.agent || reconnect) this.driver?.setAgent(live.agent, live.remoteUrl);
     if (live.camera !== this.live.camera) this.renderer.setCameraMode(live.camera);
     this.live = { ...live };
   }
@@ -53,7 +55,7 @@ export class SimController {
   }
 
   snapshot(): HudSnapshot | null {
-    return this.driver ? takeSnapshot(this.driver.sim, this.driver.lastObs, this.fps) : null;
+    return this.driver ? takeSnapshot(this.driver.sim, this.driver.lastObs, this.fps, this.driver.remote?.status ?? null) : null;
   }
 
   resize(): void {
@@ -62,6 +64,7 @@ export class SimController {
 
   dispose(): void {
     cancelAnimationFrame(this.frame);
+    this.driver?.dispose();
     this.keys.dispose();
     this.renderer.dispose();
   }

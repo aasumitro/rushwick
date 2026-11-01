@@ -17,6 +17,17 @@ export function Hud({ s }: { s: HudSnapshot }) {
         <b>{s.platform}</b>
         <span>Command delay</span>
         <b>{s.commandDelayMs === null ? 'none' : `${s.commandDelayMs.toFixed(0)} ms`}</b>
+        {s.remote && (
+          <>
+            <span>Remote</span>
+            <b className={s.remote.state === 'connected' && !s.remote.braking ? 'light-green' : 'light-red'}>
+              {s.remote.state}
+              {s.remote.rttMs !== null && ` · ${s.remote.rttMs.toFixed(1)} ms`}
+              {s.remote.braking && ' · watchdog brake'}
+            </b>
+            {s.remote.error && <span className="hud-error">{s.remote.error}</span>}
+          </>
+        )}
         <span>Next signal</span>
         <b className={LIGHT_CLASS[s.nextLight] ?? ''}>
           {s.nextLight}
