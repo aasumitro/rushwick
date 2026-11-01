@@ -24,7 +24,7 @@ async function main(): Promise<void> {
     results.push(m);
     console.log(`episode ${ep}: ${m.outcome} in ${m.time.toFixed(0)} s sim (${((performance.now() - t0) / 1000).toFixed(1)} s wall)`);
   }
-  printReport(results, args.profile, args.teacher);
+  printReport(results, `profile ${args.profile} · expert acts on ${privileged ? 'exact (privileged)' : 'sensed'} observations`);
   if (recorder) {
     await recorder.close();
     console.log(`recorded ${recorder.rows} rows -> ${args.record}`);

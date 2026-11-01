@@ -26,6 +26,11 @@ export interface SimConfig {
   seed: number;
   /** Platform profile name (see PLATFORM_PROFILES); 'ideal' keeps exact sensing and actuation. */
   profile: string;
+  /**
+   * 'measured' when perception and inference happen for real, as in a realtime
+   * bridge run: the actuator model then leaves out the profile's computeDelay.
+   */
+  latency: 'modeled' | 'measured';
   city: Partial<CityConfig>;
   /** Fixed physics step (s). */
   dt: number;
@@ -42,6 +47,7 @@ export interface SimConfig {
 export const DEFAULT_SIM_CONFIG: SimConfig = {
   seed: 42,
   profile: 'ideal',
+  latency: 'modeled',
   city: {},
   dt: 1 / 30,
   vehicleCount: 260,

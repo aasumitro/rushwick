@@ -212,6 +212,29 @@ The program that will drive the real car can drive Rushwick instead, over a WebS
 - To encode features like `encodeObservation()`, a car program converts the observation back to sim units and uses the `sensors` config from `hello`.
 - Field names follow ROS 2 (`sensor_msgs/LaserScan`, `sensor_msgs/Imu`, `nav_msgs/Odometry`), so a later ROS 2 bridge is a 1:1 mapping.
 
+Start a car program that listens on a WebSocket, then let it drive:
+
+```sh
+npm run sim:bridge -- --url ws://localhost:8765 --mode lockstep --profile rc-pi --episodes 3 --seed 1 --log runs/bridge.jsonl
+```
+
+| Option | Default | Description |
+| :--- | :--- | :--- |
+| `--url URL` | `ws://localhost:8765` | The car program's WebSocket |
+| `--mode lockstep\|realtime` | `lockstep` | Clock mode, see below |
+| `--profile NAME` | `ideal` | Platform profile |
+| `--episodes N` | `1` | Number of episodes to run |
+| `--seed N` | `1` | City and traffic seed |
+| `--side left\|right` | `left` | Driving side |
+| `--teacher` | off | Add the privileged rule-based teacher's action to every frame |
+| `--log FILE` | none | One JSON line per step: `seq`, `stamp`, `rttMs`, `command`, `deadlineMiss`, `watchdog` |
+| `--timeout-ms N` | `5000` | Lockstep: abort when a command takes longer |
+
+- **`lockstep`:** Rushwick sends frame `k`, waits for the command with `seq` `k`, applies it and steps. Faster than real time, and deterministic when the car program is deterministic and uses `stamp` as its clock.
+- **`realtime`:** Rushwick steps at 30 Hz of wall-clock time and applies the newest command received so far. It runs with `latency: 'measured'`, which leaves the profile's compute delay out of the actuator model because it now happens for real; the actuation delay stays. If no command arrives for 250 ms, the sim brakes fully and counts a watchdog trip, like the watchdog on the car.
+
+The run ends with the episode report, the round-trip latency (p50, p95, p99), deadline misses (a control-tick command that missed its control period), watchdog trips and the final `stateHash()`.
+
 ---
 
 ## Metrics & Scoring

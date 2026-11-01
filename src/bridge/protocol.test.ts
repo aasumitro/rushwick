@@ -44,7 +44,7 @@ describe('bridge messages', () => {
     const hello = buildHello(sim, 'lockstep');
     expect(hello).toMatchObject({ type: 'hello', protocol: 1, featureVersion: 1, profile: 'rc-pi', scale: 10, controlHz: 20, mode: 'lockstep', latency: 'modeled', seed: 2 });
     expect(hello.sensors.lidarRange).toBeCloseTo(120);
-    expect(buildHello(sim, 'realtime').latency).toBe('measured');
+    expect(buildHello(new Simulation({ profile: 'rc-pi', latency: 'measured' }), 'realtime')).toMatchObject({ mode: 'realtime', latency: 'measured' });
     const f = buildFrame(sim, { acceleration: 5, steering: 0.2 });
     expect(f).toMatchObject({ type: 'frame', seq: sim.steps, stamp: sim.time, controlTick: sim.controlDue, teacher: { acceleration: 0.5, steering: 0.2 } });
     expect(f.scan).toMatchObject({ angle_min: 0, range_max: 12, ranges: f.observation.lidar });

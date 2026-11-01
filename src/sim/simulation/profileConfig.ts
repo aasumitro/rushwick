@@ -1,5 +1,11 @@
-import { getProfile, resolveProfile } from '../platform';
-import type { EgoConfig, SimConfigInput } from './config';
+import { getProfile, resolveProfile, type ResolvedProfile } from '../platform';
+import type { EgoConfig, SimConfig, SimConfigInput } from './config';
+
+/** The run's platform in sim units. With measured latency the compute delay happens for real, so it is not modeled. */
+export function resolvePlatform(cfg: Pick<SimConfig, 'profile' | 'latency'>): ResolvedProfile {
+  const p = resolveProfile(getProfile(cfg.profile));
+  return cfg.latency === 'measured' ? { ...p, actuators: { ...p.actuators, computeDelay: 0 } } : p;
+}
 
 /**
  * Config values implied by a platform profile (sim units). `resolveConfig()`
