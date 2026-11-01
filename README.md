@@ -94,7 +94,7 @@ All positions are in the ego frame: x forward, y left.
 
 - **Ego state:** speed, acceleration, steering, yaw rate, vehicle dimensions.
 - **Route:** 24 waypoints with speed limits (dense near the car for accurate curvature), lateral and heading error, remaining distance.
-- **Next stop line:** distance, light state, and time until the light changes.
+- **Next stop line:** distance, light state, and time until the light changes. A realistic platform profile may report the light as `unknown` (not perceived yet) and the time left as `NaN`.
 - **Road users:** the 10 nearest vehicles and the 10 nearest pedestrians, with relative position, heading, velocity and size.
 - **Lidar:** 32 rays in 2D with a 50 m range.
 

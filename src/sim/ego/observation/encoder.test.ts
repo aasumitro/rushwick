@@ -14,4 +14,13 @@ describe('observation encoder', () => {
       expect(Math.abs(v)).toBeLessThan(10);
     }
   });
+
+  it('encodes an unperceived light as all-zero light flags and an unknown time left as 1', () => {
+    const sim = new Simulation({ seed: 9, warmupTime: 5, vehicleCount: 50, pedestrianCount: 50 });
+    sim.spawnEgo();
+    const obs = sim.observe();
+    const stop = 5 + 24 * 3 + 3; // ego | waypoints | route
+    const f = encodeObservation({ ...obs, route: { ...obs.route, nextStop: { distance: 37.5, light: 'unknown', timeLeft: Number.NaN } } });
+    expect(Array.from(f.slice(stop, stop + 6))).toEqual([1, 0.25, 0, 0, 0, 1]);
+  });
 });

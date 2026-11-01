@@ -16,6 +16,9 @@ const PROFILES: Record<string, Partial<SensorModelConfig>> = {
     egoState: { ...ideal.sensors.egoState, speedStd: 0.05, accelStd: 0.1, yawRateStd: 0.005, yawBiasWalk: 0.001 },
     localization: { ...ideal.sensors.localization, latency: 0.05, posStd: 0.3, headingStd: 0.02, driftStd: 0.5, driftTau: 5 },
     lidar: { ...ideal.sensors.lidar, rateHz: 10, latency: 0.05, rangeStd: 0.05, dropout: 0.02 },
+    objects: { ...ideal.sensors.objects, rateHz: 10, latency: 0.1, posStd: 0.2, posStdPerMeter: 0.01, velStd: 0.3, missRate: 0.02, missRatePerMeter: 0.002, occlusion: true },
+    signals: { ...ideal.sensors.signals, rateHz: 10, latency: 0.1, range: 80, missRate: 0.02, misclassify: 0.01 },
+    privileged: false,
   },
 };
 
