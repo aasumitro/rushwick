@@ -21,6 +21,11 @@ export class TimedChannel<T> {
     this.latencySteps = Math.max(0, Math.round(timing.latency / dt));
   }
 
+  /** True when some tick will read the record of `step` (ticks before `latency` has passed read record 0). */
+  reads(step: number): boolean {
+    return step === 0 || isTick(step + this.latencySteps, this.dt, this.timing.rateHz);
+  }
+
   update(history: History<SensorRecord>, step: number): void {
     if (isTick(step, this.dt, this.timing.rateHz)) this.value = this.read(history.at(step - this.latencySteps));
   }

@@ -28,8 +28,12 @@ export interface Waypoint {
 export interface StopObservation {
   /** From the ego's front bumper to the stop line (m). */
   distance: number;
-  light: LightState | 'none';
-  /** Seconds until the light changes (privileged: real AVs must infer this). */
+  /** 'none' at unsignalized junctions; 'unknown' when a realistic platform has not perceived the light. */
+  light: LightState | 'none' | 'unknown';
+  /**
+   * Seconds until the light changes (privileged: real AVs must infer this).
+   * NaN when the platform cannot know it (every profile except `ideal`).
+   */
   timeLeft: number;
 }
 

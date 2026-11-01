@@ -22,11 +22,14 @@ export interface SignalReading extends Pick<StopObservation, 'light' | 'timeLeft
 
 /**
  * One sensed Observation from the latest reading of every channel. The light
- * reading only applies to the stop line it was taken for.
+ * reading only applies to the stop line it was taken for: when localization has
+ * already moved on to the next stop line, that light is still 'unknown'.
  */
 export function assemble(time: number, body: EgoStateObservation, ego: EgoReading, pose: PoseReading, objects: ObjectsReading, lidar: number[], signal: SignalReading): Observation {
   const stop = pose.route.nextStop;
-  const nextStop = stop && signal.stopId === pose.stopId ? { ...stop, light: signal.light, timeLeft: signal.timeLeft } : stop;
+  let nextStop = stop;
+  if (stop && signal.stopId === pose.stopId) nextStop = { ...stop, light: signal.light, timeLeft: signal.timeLeft };
+  else if (stop && stop.light !== 'none') nextStop = { ...stop, light: 'unknown', timeLeft: Number.NaN };
   return {
     time,
     ego: { ...body, ...ego, x: pose.x, y: pose.y, heading: pose.heading },

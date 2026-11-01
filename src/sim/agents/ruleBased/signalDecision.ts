@@ -5,7 +5,9 @@ const YELLOW_STOP_DECEL = 3.2;
 
 /**
  * Stop/go decision at signals with yellow-light hysteresis: once the agent
- * commits to going through a yellow it does not change its mind.
+ * commits to going through a yellow it does not change its mind. A light the
+ * platform has not perceived ('unknown') is treated like a yellow: stop if
+ * that is comfortable, otherwise keep going.
  */
 export class SignalDecision {
   private yellowGo = false;
@@ -23,7 +25,7 @@ export class SignalDecision {
     this.lastDistance = stop.distance;
     if (stop.light === 'green' || stop.light === 'none') this.yellowGo = false;
     let mustStop = stop.light === 'red';
-    if (stop.light === 'yellow' && !this.yellowGo) {
+    if ((stop.light === 'yellow' || stop.light === 'unknown') && !this.yellowGo) {
       const need = (speed * speed) / (2 * Math.max(stop.distance, 0.1));
       if (need < YELLOW_STOP_DECEL) mustStop = true;
       else this.yellowGo = true;
