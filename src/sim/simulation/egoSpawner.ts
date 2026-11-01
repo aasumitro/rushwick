@@ -14,7 +14,7 @@ const START_S = 10;
 
 /** Random start lane and a destination at least `minRouteDistance` away (straight line). */
 export function placeEgo(city: City, cfg: EgoConfig, rng: Rng): EgoPlacement | null {
-  const lanes = city.lanes.map((id) => city.segments[id] as LaneSegment).filter((l) => l.path.length >= 50);
+  const lanes = city.lanes.map((id) => city.segments[id] as LaneSegment).filter((l) => l.path.length >= cfg.spawnLaneMinLength);
   for (let attempt = 0; attempt < 80; attempt++) {
     const start = rng.pick(lanes);
     const p = start.path.sample(START_S);

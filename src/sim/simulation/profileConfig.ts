@@ -10,6 +10,7 @@ export function profileDefaults(name: string): SimConfigInput {
   const p = resolveProfile(getProfile(name));
   const w = p.world ?? {};
   const ego: Partial<EgoConfig> = { params: p.vehicle };
+  if (w.spawnLaneMinLength !== undefined) ego.spawnLaneMinLength = w.spawnLaneMinLength;
   if (w.minRouteDistance !== undefined) ego.minRouteDistance = w.minRouteDistance;
   if (w.maxEpisodeTime !== undefined) ego.maxEpisodeTime = w.maxEpisodeTime;
   const out: SimConfigInput = {

@@ -48,6 +48,19 @@ describe('resolveProfile', () => {
     expect(r.sensors.signals.range).toBeCloseTo(50);
   });
 
+  it('resolves rc-pi to its full-size twin', () => {
+    const rc = getProfile('rc-pi');
+    const r = resolveProfile(rc);
+    expect(r.vehicle.wheelBase).toBeCloseTo(2.6);
+    expect(r.vehicle.maxSpeed).toBeCloseTo(30);
+    expect(r.sensors.lidar.range).toBeCloseTo(120);
+    expect(r.sensors.objects.missRatePerMeter).toBeCloseTo(0.003);
+    expect(r.vehicle.maxSteer).toBe(rc.vehicle.maxSteer);
+    expect(r.actuators.computeDelay).toBe(rc.actuators.computeDelay);
+    expect(r.sensors.objects.latency).toBe(rc.sensors.objects.latency);
+    expect(r.world).toBe(rc.world);
+  });
+
   it('divides per-meter rates by scale and keeps angles, times, rates and ratios', () => {
     const r = resolveProfile(tenth);
     expect(r.sensors.objects.missRatePerMeter).toBeCloseTo(0.003);
