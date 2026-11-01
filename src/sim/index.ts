@@ -11,6 +11,7 @@ export * from './ego/observation';
 export { planRoute, Route, type RouteStop } from './ego/route';
 export * from './metrics';
 export type { Pedestrian, PedState } from './pedestrians';
+export * from './platform';
 export { runEpisode, type EpisodeOptions } from './runner/episodeRunner';
 export * from './simulation';
 export { SignalSystem, type LightState, type WalkState } from './traffic/signals';

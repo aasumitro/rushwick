@@ -1,6 +1,7 @@
 import { DEFAULT_EGO_PARAMS, type EgoParams } from '../ego/egoParams';
 import { DEFAULT_SENSOR_CONFIG, type SensorConfig } from '../ego/observation';
 import type { CityConfig } from '../world/types';
+import { profileDefaults } from './profileConfig';
 
 export interface EgoConfig {
   enabled: boolean;
@@ -21,6 +22,8 @@ export interface EgoConfig {
 
 export interface SimConfig {
   seed: number;
+  /** Platform profile name (see PLATFORM_PROFILES); 'ideal' keeps exact sensing and actuation. */
+  profile: string;
   city: Partial<CityConfig>;
   /** Fixed physics step (s). */
   dt: number;
@@ -36,6 +39,7 @@ export interface SimConfig {
 
 export const DEFAULT_SIM_CONFIG: SimConfig = {
   seed: 42,
+  profile: 'ideal',
   city: {},
   dt: 1 / 30,
   vehicleCount: 260,
@@ -62,12 +66,17 @@ export type SimConfigInput = Partial<Omit<SimConfig, 'ego' | 'sensors'>> & {
   sensors?: Partial<SensorConfig>;
 };
 
+/** Precedence: explicit input > the profile's defaults (profileConfig.ts) > DEFAULT_SIM_CONFIG. */
 export function resolveConfig(input: SimConfigInput = {}): SimConfig {
+  const profile = input.profile ?? DEFAULT_SIM_CONFIG.profile;
+  const p = profileDefaults(profile);
   return {
     ...DEFAULT_SIM_CONFIG,
+    ...p,
     ...input,
-    city: { ...DEFAULT_SIM_CONFIG.city, ...input.city },
-    ego: { ...DEFAULT_SIM_CONFIG.ego, ...input.ego },
-    sensors: { ...DEFAULT_SIM_CONFIG.sensors, ...input.sensors },
+    profile,
+    city: { ...DEFAULT_SIM_CONFIG.city, ...p.city, ...input.city },
+    ego: { ...DEFAULT_SIM_CONFIG.ego, ...p.ego, ...input.ego },
+    sensors: { ...DEFAULT_SIM_CONFIG.sensors, ...p.sensors, ...input.sensors },
   };
 }

@@ -217,6 +217,7 @@ src/
     traffic/vehicles/  background traffic: reservations, leaders, obstacles, IDM, lane change, motion, pose
     pedestrians/       navigation, crossing rules, jaywalking, locomotion
     ego/               ego dynamics, routing (Dijkstra + path assembly), observation and feature encoder
+    platform/          platform profiles (real units) and their conversion to sim units
     agents/            DrivingAgent interface, rule-based baseline/teacher, manual, idle
     simulation/        CityWorld (background) → Simulation (+ ego episode), evaluation, diagnostics
     metrics/           episode metrics and score
