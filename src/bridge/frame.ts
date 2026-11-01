@@ -2,7 +2,7 @@ import { FEATURE_VERSION, type DrivingAction, type EpisodeMetrics, type Simulati
 import { PROTOCOL_VERSION, type ClockMode, type CommandMessage, type EpisodeMessage, type FrameMessage, type HelloMessage } from './messages';
 import { actionToReal, actionToSim, metricsToReal, observationToReal } from './units';
 
-/** The hello message for a simulation. Realtime runs measure compute latency instead of modeling it. */
+/** The hello message for a simulation; a realtime run should use a simulation with `latency: 'measured'`. */
 export function buildHello(sim: Simulation, mode: ClockMode): HelloMessage {
   const { config, platform } = sim;
   return {
@@ -14,7 +14,7 @@ export function buildHello(sim: Simulation, mode: ClockMode): HelloMessage {
     dt: config.dt,
     controlHz: Math.min(platform.actuators.controlHz, 1 / config.dt),
     mode,
-    latency: mode === 'realtime' ? 'measured' : 'modeled',
+    latency: config.latency,
     seed: config.seed,
     sensors: config.sensors,
   };

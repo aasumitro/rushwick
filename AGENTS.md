@@ -26,6 +26,7 @@ npm test                     # full Vitest suite, about 1.5 minutes (the closed-
 npx vitest run src/sim/core  # one folder or file
 npm run build                # typecheck + production bundle in dist/
 npm run sim:headless -- --episodes 3 --seed 1   # headless smoke run with the rule-based agent
+npm run sim:bridge -- --mode lockstep --teacher # let a running car program drive over the bridge (ws://localhost:8765)
 ```
 
 Node.js 22.12 or newer is required (Vitest engines). Development and CI use Node 26.
@@ -47,7 +48,7 @@ src/sim/        headless simulation core; its public API is src/sim/index.ts
 src/render/     read-only Three.js view of a Simulation
 src/ui/         React app, fixed-step frame loop, keyboard input, settings panels
 src/bridge/     bridge protocol v1 to a car program: messages, validators, real ↔ sim units, frame builder (pure TS)
-scripts/        headless runner (tsx) and JSONL dataset recorder
+scripts/        headless runner (tsx), JSONL dataset recorder, bridge runner (scripts/bridge/)
 ```
 
 Inside `src/sim`, imports only point down this stack (skipping layers is fine):
@@ -87,7 +88,7 @@ Recorded datasets, trained models and benchmark results depend on the items belo
 - `DEFAULT_SIM_CONFIG`, `DEFAULT_CITY_CONFIG`, `DEFAULT_EGO_PARAMS`, `DEFAULT_SENSOR_CONFIG`, and anything else that changes what a given seed generates.
 - The built-in platform profile values in `src/sim/platform/profiles/`. `SimConfig.profile` defaults to `'ideal'`, which must stay bit-identical to the behavior from before platform profiles existed (`idealProfile.test.ts` pins it).
 - `FEATURE_VERSION` in `encoder.ts`. Bump it whenever the `encodeObservation()` layout or scaling changes; it is written into JSONL rows, the encoder golden file and the bridge `hello` message.
-- Bridge protocol v1 (`src/bridge/messages.ts`): message types and fields, real units on the wire, `null` for non-finite numbers. Bump `PROTOCOL_VERSION` for a breaking change and update every car program with it.
+- Bridge protocol v1 (`src/bridge/messages.ts`): message types and fields, real units on the wire, `null` for non-finite numbers. Bump `PROTOCOL_VERSION` for a breaking change and update every car program with it. The `sim:bridge` CLI flags and its per-step log format belong to it.
 - The `sim:headless` CLI flags (including `--profile` and `--teacher`) and the JSONL row format (`episode`, `t`, `profile`, `featureVersion`, `features`, `action`).
 
 `Observation.route.nextStop.timeLeft` is privileged information that a real AV does not have. If you add another privileged field, document it the same way. Realistic platform profiles hide it (`NaN`) and may report `nextStop.light` as `'unknown'`; the encoder maps both to values it already produced (time-left feature 1, all-zero light flags), so the layout does not change. Both are part of the observation contract.

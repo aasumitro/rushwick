@@ -3,10 +3,11 @@ import type { EgoVehicle } from '../ego/egoVehicle';
 import { buildObservation, type Observation } from '../ego/observation';
 import type { Route } from '../ego/route';
 import type { EpisodeMetrics } from '../metrics';
-import { getProfile, resolveProfile, type ResolvedProfile } from '../platform';
+import type { ResolvedProfile } from '../platform';
 import { CityWorld } from './cityWorld';
 import { stateHash } from './diagnostics';
 import { EgoEpisode } from './egoEpisode';
+import { resolvePlatform } from './profileConfig';
 import { noEvents, type StepEvents } from './types';
 import { worldView } from './worldView';
 
@@ -21,8 +22,8 @@ export class Simulation extends CityWorld {
   /** Episodes started so far (also seeds each episode's spawn). */
   episodes = 0;
   lastEvents: StepEvents = noEvents();
-  /** `config.profile` in sim units. */
-  readonly platform: ResolvedProfile = resolveProfile(getProfile(this.config.profile));
+  /** `config.profile` in sim units (without the compute delay when latency is measured). */
+  readonly platform: ResolvedProfile = resolvePlatform(this.config);
   private episode: EgoEpisode | null = null;
 
   get ego(): EgoVehicle | null {

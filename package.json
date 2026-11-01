@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "sim:headless": "tsx scripts/run-headless.ts"
+    "sim:headless": "tsx scripts/run-headless.ts",
+    "sim:bridge": "tsx scripts/bridge/run-bridge.ts"
   },
   "dependencies": {
     "react": "^19.3.1",
