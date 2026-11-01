@@ -235,6 +235,26 @@ npm run sim:bridge -- --url ws://localhost:8765 --mode lockstep --profile rc-pi 
 
 The run ends with the episode report, the round-trip latency (p50, p95, p99), deadline misses (a control-tick command that missed its control period), watchdog trips and the final `stateHash()`.
 
+### Reference car program
+
+[`onboard/`](onboard/) holds a reference car program in Python, `rushwick_onboard`. It is the program that will later run on the Raspberry Pi: only its hardware backend changes. A safety layer always sits between its policy and the hardware: steering clamp, speed cap, lidar stop and a stale-frame watchdog.
+
+```sh
+python3 -m venv .venv && . .venv/bin/activate
+pip install -e "onboard[test]"
+python -m rushwick_onboard --hardware sim --policy simple          # terminal 1: the car program
+npm run sim:bridge -- --mode lockstep --profile rc-pi --episodes 3  # terminal 2: Rushwick drives it
+pytest onboard/tests                                                # encoder golden vectors, units, safety, loop
+```
+
+| Policy | What it does |
+| :--- | :--- |
+| `simple` | Pure-pursuit lane keeping at 60% of the posted limit; stops for red, yellow and unknown lights and for road users in its lane |
+| `echo` | Returns the privileged teacher's action from each frame (`sim:bridge --teacher`); reproduces an in-process expert run bit for bit |
+| `onnx:<path>` | A trained model: encodes the observation like `encodeObservation()`; needs `pip install -e "onboard[onnx]"` |
+
+The lidar stop is off by default in SIL (`--no-lidar-stop`), because the simulated 2D lidar sees curbs as walls, see [Known Limitations](#known-limitations).
+
 ---
 
 ## Metrics & Scoring
@@ -343,7 +363,7 @@ src/
     traffic/vehicles/  background traffic: reservations, leaders, obstacles, IDM, lane change, motion, pose
     pedestrians/       navigation, crossing rules, jaywalking, locomotion
     ego/               ego dynamics, routing (Dijkstra + path assembly), observation and feature encoder
-    platform/          platform profiles (real units) and their conversion to sim units
+    platform/          platform profiles (real units), unit scaling, actuator and sensor models
     agents/            DrivingAgent interface, rule-based baseline/teacher, manual, idle
     simulation/        CityWorld (background) → Simulation (+ ego episode), evaluation, diagnostics
     metrics/           episode metrics and score
@@ -352,7 +372,8 @@ src/
   render/              read-only Three.js view (instanced meshes, city layers, camera, overlays)
   bridge/              bridge protocol v1 to a car program: messages, validators, real ↔ sim units
   ui/                  React app: fixed-step loop, input, hooks, panels
-scripts/               headless runner and JSONL dataset recorder
+scripts/               headless runner, JSONL dataset recorder, bridge runner, encoder golden export
+onboard/               reference car program in Python (rushwick_onboard): loop, policies, safety layer, encoder port
 ```
 
 ### Design Principles
@@ -394,6 +415,7 @@ Project rules for contributors and coding agents live in [`AGENTS.md`](AGENTS.md
 - A model trained only in Rushwick learns the rules of Rushwick. Measure the sim-to-real gap separately.
 - Platform perception errors are independent per sample: no tracking ID switches, ghost objects or lights that stay misread. The map is perfect, and there are no camera images, lidar reflections or 3D effects.
 - Sensor latency and command delay are quantized to the 33 ms physics step.
+- The 2D lidar sees block outlines (curbs) as rectangles with square corners. When the ego cuts a rounded corner, its center can be inside such a rectangle, and every ray then reads 0 (or the profile's minimum range). That is why the reference car program's lidar stop is off in SIL.
 
 ---
 
