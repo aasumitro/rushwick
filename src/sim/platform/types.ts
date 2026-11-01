@@ -12,6 +12,8 @@ export interface PlatformWorld {
   city?: Partial<CityConfig>;
   vehicleCount?: number;
   pedestrianCount?: number;
+  /** Lanes shorter than this (m) are not used to start or end a route. */
+  spawnLaneMinLength?: number;
   /** Minimum straight-line distance between start and destination (m). */
   minRouteDistance?: number;
   /** Hard cap on episode duration (s). */

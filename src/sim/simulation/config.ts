@@ -6,6 +6,8 @@ import { profileDefaults } from './profileConfig';
 export interface EgoConfig {
   enabled: boolean;
   params: EgoParams;
+  /** Lanes shorter than this (m) are not used to start or end a route. */
+  spawnLaneMinLength: number;
   /** Minimum straight-line distance between start and destination (m). */
   minRouteDistance: number;
   /** Hard cap on episode duration (s). */
@@ -49,6 +51,7 @@ export const DEFAULT_SIM_CONFIG: SimConfig = {
   ego: {
     enabled: true,
     params: DEFAULT_EGO_PARAMS,
+    spawnLaneMinLength: 50,
     minRouteDistance: 320,
     maxEpisodeTime: 600,
     minAverageSpeed: 1.25,

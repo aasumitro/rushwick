@@ -22,7 +22,7 @@ User-facing documentation lives in `README.md`.
 npm install
 npm run dev                  # Vite dev server on http://localhost:3000
 npm run typecheck            # tsc --noEmit
-npm test                     # full Vitest suite, about 1 minute (two closed-loop agent tests take ~30 s each)
+npm test                     # full Vitest suite, about 1.5 minutes (the closed-loop expert tests take 30–40 s each)
 npx vitest run src/sim/core  # one folder or file
 npm run build                # typecheck + production bundle in dist/
 npm run sim:headless -- --episodes 3 --seed 1   # headless smoke run with the rule-based agent

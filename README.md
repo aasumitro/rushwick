@@ -22,6 +22,7 @@ Rushwick generates a busy procedural city with arterial roads, signalized inters
 - **Pedestrians.** They walk the sidewalk network, cross on the walk signal, and sometimes jaywalk.
 - **Ego vehicle.** A kinematic bicycle model with acceleration, braking and steering-rate limits.
 - **Model interface.** A structured observation (route, next signal, nearby road users, 2D lidar), a 258-float feature encoder, and a one-method `DrivingAgent` interface.
+- **Platform profiles.** Emulate a 1:10 RC car on a Raspberry Pi or a passenger car: noisy, delayed and occluded sensors, delayed and lagging actuators, and a limited control rate. The default `ideal` profile keeps exact sensing.
 - **Evaluation.** Episode outcomes, safety and comfort metrics, and a composite driving score.
 - **Reproducibility.** The same `(config, seed)` always produces the same episode, in the browser, in tests and in Node.
 - **Datasets.** The headless runner records `(features, action)` pairs from the rule-based expert as JSON Lines.
@@ -111,6 +112,48 @@ ego(5) | waypoints(24×3) | route(3) | stop(6) | vehicles(10×9) | pedestrians(1
 
 ---
 
+## Platform Profiles
+
+A platform profile makes the ego vehicle sense and act like a real vehicle: noisy, delayed, rate-limited and occluded sensors, delayed and lagging actuators, and a limited control rate. Pick one with `profile` in the simulation config.
+
+```ts
+const sim = new Simulation({ seed: 1, profile: 'rc-pi' });
+```
+
+| Profile | Platform | Scale |
+| :--- | :--- | ---: |
+| `ideal` (default) | Exact sensing and instant actuation, the behavior from before profiles existed | 1 |
+| `rc-pi` | 1:10 RC car with a Raspberry Pi 5 | 10 |
+| `passenger-car` | Full-size car with a 360° lidar and object detection | 1 |
+
+Profiles are written in real units, as measured on the bench. `resolveProfile()` converts them to sim units: a 1:10 car becomes its full-size twin, with lengths, speeds and accelerations multiplied by 10 and time unchanged. The kinematic bicycle model behaves exactly the same under this transform, so city generation, traffic and signal timing stay untouched.
+
+Key values, in real units:
+
+| | `rc-pi` | `passenger-car` |
+| :--- | :--- | :--- |
+| Control rate | 20 Hz | 20 Hz |
+| Command delay (compute + actuation ± jitter) | 60 + 20 ± 15 ms | 80 + 60 ± 15 ms |
+| Longitudinal lag | 0.15 s | 0.35 s |
+| Steering-center error (std, per episode) | 0.03 rad | 0.005 rad |
+| Localization | ±2 cm, plus a slow 3 cm drift | ±10 cm, plus a slow 20 cm drift |
+| Lidar | 10 Hz, 12 m, ±2 cm, 2% dropouts | 10 Hz, 50 m, ±3 cm, 1% dropouts |
+| Object detection | 10 Hz, 100 ms late, 100° field of view, 3 m, occlusion | 10 Hz, 100 ms late, 360°, 60 m, occlusion |
+| Traffic lights | within 5 m, 5% missed, 2% misread | within 80 m, 2% missed, 1% misread |
+
+What changes for a decision model:
+
+- `sim.observe()` returns what the platform perceives. `sim.observeIdeal()` returns the exact observation, for privileged teachers and debugging.
+- Hidden information shows up through values, never through new fields: undetected road users are absent, lidar rays without a return read the maximum range, an unperceived light reads `unknown`, and `timeLeft` is `NaN`. The 258-float feature layout is unchanged.
+- Commands are accepted at the control rate, held in between, and reach the wheels after the delay. `sim.controlDue` tells a driver whether the next step accepts a new command.
+- Metrics, collision checks and `stateHash()` always use the true state.
+- The same `(config, seed)` still produces the same episode: sensor noise is drawn once per physics step, from its own random stream per channel.
+
+> [!NOTE]
+> The `rc-pi` values are assumptions until they are measured on the real car. Its world is a **placeholder track** until the room for the physical track is measured: a 2×2 grid at 30 m spacing (a 4.7 m square of floor at 1:10) without traffic. Its four corners are plain turns, so it forms two one-way loops without signals.
+
+---
+
 ## Headless Runs & Datasets
 
 Evaluate the rule-based agent in Node without a browser. Add `--record` to write `(features, action)` pairs as JSON Lines for imitation learning.
@@ -186,6 +229,38 @@ for side in left right; do
     npm run sim:headless -- --episodes 3 --seed "$seed" --side "$side"
   done
 done
+```
+
+### Per platform profile
+
+On a realistic [platform profile](#platform-profiles) the same expert runs in two ways, over the same 18 episodes:
+
+- **Privileged teacher:** it acts on the exact observation (`sim.observeIdeal()`), but its commands still go through the platform's control rate, delay, lag, deadbands and steering error. Use this to record datasets.
+- **Sensed:** it acts on what the platform perceives (`sim.observe()`), as a learned model will.
+
+| Platform | Observations | Success | Stuck | Timeout | Collisions | Red lights | Off-road | Near-misses | Mean score |
+| :--- | :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `passenger-car` | exact (privileged teacher) | 16 / 18 | 2 | 0 | 0 | 0 | 0 | 5 | 0.883 |
+| `passenger-car` | sensed | 9 / 18 | 5 | 0 | 1 | 0 | 3 | 0 | 0.671 |
+| `rc-pi`, placeholder track | exact (privileged teacher) | 18 / 18 | 0 | 0 | 0 | 0 | 0 | 0 | 0.845 |
+| `rc-pi`, placeholder track | sensed | 10 / 18 | 0 | 0 | 0 | 0 | 8 | 0 | 0.629 |
+
+As a privileged teacher the expert stays safe on both platforms. On sensed observations it does not: noise, latency, occlusion and unknown lights cost it collisions and curb strikes. That gap is what a model trained on realistic observations has to close. The `rc-pi` track has no traffic or signals yet, so its episodes are short and only test lane keeping and turning.
+
+To reproduce a row, run the 18 episodes with the profile and act on `sim.observeIdeal()` (privileged) or `sim.observe()` (sensed):
+
+```ts
+for (const side of ['left', 'right'] as const) {
+  for (const seed of [1, 2, 3]) {
+    const sim = new Simulation({ seed, profile: 'passenger-car', city: { drivingSide: side } });
+    for (let ep = 0; ep < 3; ep++) {
+      sim.spawnEgo();
+      const agent = new RuleBasedAgent();
+      while (!sim.episodeDone) sim.step(agent.act(sim.observeIdeal()));
+      console.log(sim.episodeMetrics());
+    }
+  }
+}
 ```
 
 ---
@@ -265,6 +340,8 @@ Project rules for contributors and coding agents live in [`AGENTS.md`](AGENTS.md
 - Background drivers are rule-based and polite. There are no aggressive drivers or adversarial scenarios yet.
 - Pedestrians do not avoid each other. If a car blocks them for too long they slip past it (visual overlap only), but they never pass through the ego vehicle.
 - A model trained only in Rushwick learns the rules of Rushwick. Measure the sim-to-real gap separately.
+- Platform perception errors are independent per sample: no tracking ID switches, ghost objects or lights that stay misread. The map is perfect, and there are no camera images, lidar reflections or 3D effects.
+- Sensor latency and command delay are quantized to the 33 ms physics step.
 
 ---
 
