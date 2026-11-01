@@ -46,7 +46,7 @@ export function WorldPanel({ world, onApply }: Props) {
       <Field label="Jaywalking">
         <Slider value={draft.jaywalkProbability} min={0} max={0.2} step={0.01} onChange={(v) => set('jaywalkProbability', v)} format={(v) => `${Math.round(v * 100)}%`} />
       </Field>
-      <div className="button-row">
+      <div className="form-actions">
         <button onClick={() => onApply(draft)}>Regenerate city</button>
         <button onClick={() => setDraft({ ...draft, seed: Math.floor(Math.random() * 1e6) })}>Random seed</button>
       </div>

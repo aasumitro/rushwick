@@ -3,6 +3,7 @@ import { Hud } from './components/Hud';
 import { MetricsPanel } from './components/MetricsPanel';
 import { EpisodeBanner, KeyHelp, LoadingOverlay } from './components/Overlays';
 import { RuntimePanel } from './components/RuntimePanel';
+import { SidePanel } from './components/SidePanel';
 import { WorldPanel } from './components/WorldPanel';
 import { usePolling } from './hooks/usePolling';
 import { useShortcuts } from './hooks/useShortcuts';
@@ -46,13 +47,13 @@ export function App() {
       {snapshot && <Hud s={snapshot} />}
       <EpisodeBanner outcome={snapshot?.metrics?.outcome} />
       <LoadingOverlay visible={loading} />
-      <aside className="panel">
+      <SidePanel>
         <h2>Rushwick - Urban AV Sim</h2>
         <KeyHelp />
         <RuntimePanel live={live} onChange={setLive} onStep={() => controller?.stepOnce()} onNewEpisode={() => controller?.newEpisode()} />
         <MetricsPanel m={snapshot?.metrics ?? null} episode={snapshot?.episode ?? 0} />
         <WorldPanel world={world} onApply={setWorld} />
-      </aside>
+      </SidePanel>
     </div>
   );
 }
