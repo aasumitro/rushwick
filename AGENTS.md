@@ -46,6 +46,7 @@ src/sim/        headless simulation core; its public API is src/sim/index.ts
   runner/       runEpisode(), the closed-loop episode runner
 src/render/     read-only Three.js view of a Simulation
 src/ui/         React app, fixed-step frame loop, keyboard input, settings panels
+src/bridge/     bridge protocol v1 to a car program: messages, validators, real ↔ sim units, frame builder (pure TS)
 scripts/        headless runner (tsx) and JSONL dataset recorder
 ```
 
@@ -69,7 +70,7 @@ These rules protect properties the whole project depends on. Do not break them, 
    - Give new stochastic behavior its own stream with `rng.fork('<unique label>')`. Forking does not advance the parent, so existing seeds still generate the same city and traffic. Drawing extra numbers from an existing stream changes the outcome of every seed. Do that only on purpose, and say so in the commit.
    - Time advances only through `Simulation.step()` with the fixed `config.dt` (1/30 s). Nothing in the simulation may depend on frame rate or playback speed.
    - Platform sensor models sample once per physics step inside `Simulation.step()`. `observe()` and `observeIdeal()` are pure reads, so the number of calls (HUD, driver, recorder) never changes an RNG stream. `sensedEpisode.test.ts` checks this.
-3. **One-way API boundary.** Code outside `src/sim` (render, UI, scripts) imports only from `src/sim/index.ts`, never from deep paths. If something is missing, export it from the index.
+3. **One-way API boundary.** Code outside `src/sim` (render, UI, bridge, scripts) imports only from `src/sim/index.ts`, never from deep paths. If something is missing, export it from the index. The same holds for `src/bridge/index.ts`.
 4. **The renderer is read-only.** `src/render` reads simulation state and never mutates it. Only `runEpisode()` and the UI's `EpisodeDriver` call `Simulation.step()`.
 5. **Background traffic is collision-free by construction.** A vehicle must hold a reservation on its next connector before it crosses the stop line, and conflicting connectors can never be reserved at the same time. `simulation.test.ts` asserts zero vehicle-vehicle and pedestrian-vehicle overlaps. Only the ego vehicle can collide, so every collision in the metrics belongs to the agent under test.
 6. **The rule-based agent drives cleanly.** It is the baseline and the imitation-learning teacher. `ruleBasedAgent.test.ts` requires zero collisions, red-light violations and curb strikes.
@@ -86,6 +87,7 @@ Recorded datasets, trained models and benchmark results depend on the items belo
 - `DEFAULT_SIM_CONFIG`, `DEFAULT_CITY_CONFIG`, `DEFAULT_EGO_PARAMS`, `DEFAULT_SENSOR_CONFIG`, and anything else that changes what a given seed generates.
 - The built-in platform profile values in `src/sim/platform/profiles/`. `SimConfig.profile` defaults to `'ideal'`, which must stay bit-identical to the behavior from before platform profiles existed (`idealProfile.test.ts` pins it).
 - `FEATURE_VERSION` in `encoder.ts`. Bump it whenever the `encodeObservation()` layout or scaling changes; it is written into JSONL rows, the encoder golden file and the bridge `hello` message.
+- Bridge protocol v1 (`src/bridge/messages.ts`): message types and fields, real units on the wire, `null` for non-finite numbers. Bump `PROTOCOL_VERSION` for a breaking change and update every car program with it.
 - The `sim:headless` CLI flags (including `--profile` and `--teacher`) and the JSONL row format (`episode`, `t`, `profile`, `featureVersion`, `features`, `action`).
 
 `Observation.route.nextStop.timeLeft` is privileged information that a real AV does not have. If you add another privileged field, document it the same way. Realistic platform profiles hide it (`NaN`) and may report `nextStop.light` as `'unknown'`; the encoder maps both to values it already produced (time-left feature 1, all-zero light flags), so the layout does not change. Both are part of the observation contract.
@@ -125,7 +127,7 @@ No formatter or linter is configured, so match the surrounding code.
 
 ## Testing
 
-- Vitest runs in the `node` environment on colocated `src/**/*.test.ts` files. Only `src/sim` has tests. Check render and UI changes in the browser with `npm run dev`.
+- Vitest runs in the `node` environment on colocated `src/**/*.test.ts` files. `src/sim` and `src/bridge` have tests. Check render and UI changes in the browser with `npm run dev`.
 - Tests assert behavior and invariants (determinism, zero background overlaps, clean expert driving), not implementation details.
 - Add a test next to new simulation logic. Keep test worlds small (short `warmupTime`, fewer vehicles), as the existing tests do.
 - The default test timeout is 60 s. Long closed-loop tests pass their own `{ timeout }`.
