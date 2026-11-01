@@ -30,6 +30,7 @@ npm run sim:bridge -- --mode lockstep --teacher # let a running car program driv
 npm run sim:golden           # regenerate onboard/tests/golden/encoder-v<FEATURE_VERSION>.json
 pip install -e "onboard[test]" && pytest onboard/tests   # reference car program (use a virtualenv)
 python -m rushwick_onboard --hardware sim --policy simple # car program for sim:bridge to connect to
+npm run sim:echo-check -- --seed 3                       # bridge vs in-process, against `--policy echo`
 ```
 
 Node.js 22.12 or newer is required (Vitest engines). Development and CI use Node 26.
@@ -165,6 +166,6 @@ No formatter or linter is configured, so match the surrounding code.
 1. `npm run typecheck` and `npm test` pass. Also run `npm run build` when you changed `src/render`, `src/ui` or the Vite config, and `pytest onboard/tests` when you changed `onboard/`, the bridge protocol or the encoder.
 2. For visual or UI changes, run `npm run dev` and check the result in the browser.
 3. Update `README.md` when controls, CLI flags, observations, metrics, the baseline or the known limitations change.
-4. Work on a branch and open a pull request into `main`. CI (`.github/workflows/ci.yml`) runs the typecheck, build and tests, and it must pass.
+4. Work on a branch and open a pull request into `main`. CI (`.github/workflows/ci.yml`) runs the typecheck, build and tests, plus a second job with `pytest onboard/tests` and the SIL echo check, and both must pass. A failing echo check means the bridge, the units, the car program's loop or safety layer changed what the expert does.
 5. Write commit messages in English with Conventional Commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `ci:`, `chore:`. Add `!` for breaking contract changes.
 6. Never commit `dist/`, `node_modules/` or recorded datasets in `runs/`.

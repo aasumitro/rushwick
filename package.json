@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "sim:headless": "tsx scripts/run-headless.ts",
     "sim:bridge": "tsx scripts/bridge/run-bridge.ts",
-    "sim:golden": "tsx scripts/golden.ts"
+    "sim:golden": "tsx scripts/golden.ts",
+    "sim:echo-check": "tsx scripts/bridge/echo-check.ts"
   },
   "dependencies": {
     "react": "^19.3.1",
