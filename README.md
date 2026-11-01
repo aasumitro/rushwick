@@ -209,7 +209,7 @@ The program that will drive the real car can drive Rushwick instead, over a WebS
 - Units on the wire are real. Lengths, speeds and accelerations are divided by the profile's scale (10 for `rc-pi`); command accelerations are multiplied back. Angles, yaw rates, times and normalized steering are unchanged.
 - Numbers that are not finite, such as an unknown `timeLeft`, travel as `null`.
 - On frames without `controlTick` the platform ignores new commands, so the car program resends its last one.
-- To encode features like `encodeObservation()`, a car program converts the observation back to sim units and uses the `sensors` config from `hello`.
+- To encode features like `encodeObservation()`, a car program converts the observation back to sim units and uses the `sensors` config from `hello`. [`onboard/tests/golden/encoder-v1.json`](onboard/tests/golden/encoder-v1.json) holds golden vectors to test such an encoder against: sensed observations from every profile (sim units, plus the wire form for `rc-pi`) and their exact features. `npm run sim:golden` regenerates it, byte for byte.
 - Field names follow ROS 2 (`sensor_msgs/LaserScan`, `sensor_msgs/Imu`, `nav_msgs/Odometry`), so a later ROS 2 bridge is a 1:1 mapping.
 
 Start a car program that listens on a WebSocket, then let it drive:

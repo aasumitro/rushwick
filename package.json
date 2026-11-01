@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "sim:headless": "tsx scripts/run-headless.ts",
-    "sim:bridge": "tsx scripts/bridge/run-bridge.ts"
+    "sim:bridge": "tsx scripts/bridge/run-bridge.ts",
+    "sim:golden": "tsx scripts/golden.ts"
   },
   "dependencies": {
     "react": "^19.3.1",

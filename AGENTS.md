@@ -27,6 +27,7 @@ npx vitest run src/sim/core  # one folder or file
 npm run build                # typecheck + production bundle in dist/
 npm run sim:headless -- --episodes 3 --seed 1   # headless smoke run with the rule-based agent
 npm run sim:bridge -- --mode lockstep --teacher # let a running car program drive over the bridge (ws://localhost:8765)
+npm run sim:golden           # regenerate onboard/tests/golden/encoder-v<FEATURE_VERSION>.json
 ```
 
 Node.js 22.12 or newer is required (Vitest engines). Development and CI use Node 26.
@@ -140,7 +141,7 @@ No formatter or linter is configured, so match the surrounding code.
   - An agent that needs an ML runtime lives outside `src/sim` and imports the types from `src/sim`.
   - To make it selectable in the UI, extend `AgentKind` in `src/ui/settings.ts`, and `createAgent` and `AGENT_LABELS` in `src/ui/controller/agentFactory.ts`.
   - `scripts/run-headless.ts` currently always uses `RuleBasedAgent`.
-- **New observation field.** Update `src/sim/ego/observation/types.ts`, the matching sensor file, `builder.ts`, `encoder.ts` and its size constants, `encoder.test.ts`, and the README observation section. This is a contract change.
+- **New observation field.** Update `src/sim/ego/observation/types.ts`, the matching sensor file, `builder.ts`, `encoder.ts` and its size constants, `encoder.test.ts`, and the README observation section. If the features change, bump `FEATURE_VERSION`, regenerate the golden file with `npm run sim:golden` and port the change to every car program's encoder. This is a contract change.
 - **New metric.** Update `src/sim/metrics/types.ts` and `tracker.ts`, and `score.ts` only if the metric is an infraction. Then show it in `src/ui/components/MetricsPanel.tsx` and `scripts/headless/report.ts`, and document it in the README.
 - **New vehicle kind.** Add it to `src/sim/traffic/vehicles/specs.ts`, then add a 3D model to `MODELS` in `src/render/agents/vehicleLayer.ts`.
 - **New platform profile.** Write it in real units (as measured on the bench) as one file in `src/sim/platform/profiles/`, register it in `PLATFORM_PROFILES`, and note the date and method next to every measured value. `resolveProfile()` converts it to sim units; never pre-scale values by hand. World defaults go in `profile.world` (sim units) and lose to explicit input.
