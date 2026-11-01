@@ -19,8 +19,6 @@ export interface PlatformModels {
  */
 export function createPlatformModels(p: ResolvedProfile, vehicle: EgoParams, sensors: SensorConfig, dt: number, rng: Rng): PlatformModels | null {
   if (isIdeal(p)) return null;
-  return {
-    actuators: new ActuatorModel(p.actuators, vehicle, dt, rng.fork('actuators')),
-    sensors: new SensorModel(p.sensors, sensors, dt),
-  };
+  const actuators = new ActuatorModel(p.actuators, vehicle, dt, rng.fork('actuators'));
+  return { actuators, sensors: new SensorModel(p.sensors, sensors, dt, rng, actuators) };
 }
