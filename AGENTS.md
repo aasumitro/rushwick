@@ -39,7 +39,7 @@ src/sim/        headless simulation core; its public API is src/sim/index.ts
   traffic/      signal controller and background vehicles (IDM, lane changes, junction reservations)
   pedestrians/  sidewalk navigation, crossing rules, jaywalking
   ego/          ego dynamics, route planning, observation building and feature encoding
-  platform/     platform profiles in real units (ideal, ...), their conversion to sim units, the actuator model
+  platform/     platform profiles in real units (ideal, ...), their conversion to sim units, actuator and sensor models
   agents/       DrivingAgent interface and built-in agents (rule-based, manual, idle)
   simulation/   CityWorld (background world), Simulation (adds the ego episode), config, diagnostics
   metrics/      episode metrics and the composite score
@@ -68,6 +68,7 @@ These rules protect properties the whole project depends on. Do not break them, 
    - Draw every random number from an `Rng` instance. Never use `Math.random()`, `Date.now()`, `performance.now()` or any other wall-clock source in `src/sim`.
    - Give new stochastic behavior its own stream with `rng.fork('<unique label>')`. Forking does not advance the parent, so existing seeds still generate the same city and traffic. Drawing extra numbers from an existing stream changes the outcome of every seed. Do that only on purpose, and say so in the commit.
    - Time advances only through `Simulation.step()` with the fixed `config.dt` (1/30 s). Nothing in the simulation may depend on frame rate or playback speed.
+   - Platform sensor models sample once per physics step inside `Simulation.step()`. `observe()` and `observeIdeal()` are pure reads, so the number of calls (HUD, driver, recorder) never changes an RNG stream. `sensedEpisode.test.ts` checks this.
 3. **One-way API boundary.** Code outside `src/sim` (render, UI, scripts) imports only from `src/sim/index.ts`, never from deep paths. If something is missing, export it from the index.
 4. **The renderer is read-only.** `src/render` reads simulation state and never mutates it. Only `runEpisode()` and the UI's `EpisodeDriver` call `Simulation.step()`.
 5. **Background traffic is collision-free by construction.** A vehicle must hold a reservation on its next connector before it crosses the stop line, and conflicting connectors can never be reserved at the same time. `simulation.test.ts` asserts zero vehicle-vehicle and pedestrian-vehicle overlaps. Only the ego vehicle can collide, so every collision in the metrics belongs to the agent under test.

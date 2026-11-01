@@ -3,7 +3,7 @@ import type { DrivingAction } from '../ego/egoParams';
 import type { EgoVehicle } from '../ego/egoVehicle';
 import type { Route } from '../ego/route';
 import type { EpisodeMetrics } from '../metrics';
-import { ActuatorModel, isIdeal } from '../platform';
+import { createPlatformModels, type PlatformModels } from '../platform';
 import type { City } from '../world/types';
 import { computeEgoBlocked } from './egoBlocking';
 import { EgoContact } from './egoContact';
@@ -24,24 +24,24 @@ export class EgoEpisode {
     readonly ego: EgoVehicle,
     readonly route: Route,
     private readonly evaluator: EgoEvaluator,
-    /** Null for the ideal profile, which applies actions exactly. */
-    readonly actuators: ActuatorModel | null,
+    /** Sensor and actuator models; null for the ideal profile, which senses and acts exactly. */
+    readonly models: PlatformModels | null,
   ) {}
 
   static start(host: EpisodeHost, rng: Rng): EgoEpisode | null {
-    const { config, platform } = host;
-    // Forking does not advance `rng`, so placement is the same with or without a model.
-    const actuators = isIdeal(platform) ? null : new ActuatorModel(platform.actuators, config.ego.params, config.dt, rng.fork('actuators'));
+    const { config } = host;
+    // Forking does not advance `rng`, so placement is the same with or without models.
+    const models = createPlatformModels(host.platform, config.ego.params, config.sensors, config.dt, rng);
     const placed = placeEgo(host.city, config.ego, rng);
     if (!placed) return null;
     host.traffic.removeNear(placed.ego.x, placed.ego.y, 14);
     const evaluator = new EgoEvaluator(host.city, host.signals, placed.route, config.ego, placed.progress);
-    return new EgoEpisode(placed.ego, placed.route, evaluator, actuators);
+    return new EgoEpisode(placed.ego, placed.route, evaluator, models);
   }
 
   /** True when the next step accepts a new command (always without an actuator model). */
   get controlDue(): boolean {
-    return this.actuators?.controlDue(this.steps) ?? true;
+    return this.models?.actuators.controlDue(this.steps) ?? true;
   }
 
   get progress(): number {
@@ -75,7 +75,7 @@ export class EgoEpisode {
     }
     const dt = host.config.dt;
     const a = action ?? IDLE;
-    ego.step(this.actuators ? this.actuators.apply(a, this.steps) : a, dt);
+    ego.step(this.models ? this.models.actuators.apply(a, this.steps) : a, dt);
     this.steps++;
     const m = this.evaluator.metrics;
     m.sample(dt, ego.speed, ego.accel, ego.yawRate);

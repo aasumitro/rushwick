@@ -1,6 +1,7 @@
 import type { Rng } from '../../core/rng';
 import { clamp } from '../../core/vec2';
 import type { DrivingAction, EgoParams } from '../../ego/egoParams';
+import { isTick } from '../clock';
 import type { ActuatorModelConfig } from './types';
 
 interface QueuedCommand {
@@ -8,9 +9,6 @@ interface QueuedCommand {
   due: number;
   action: DrivingAction;
 }
-
-/** Guards floor(k · dt · controlHz) against products like 2.9999999999999996. */
-const TICK_EPS = 1e-9;
 
 const finite = (v: number): number => (Number.isFinite(v) ? v : 0);
 
@@ -46,7 +44,7 @@ export class ActuatorModel {
 
   /** True when episode step k accepts a new command (always when controlHz ≥ 1/dt). */
   controlDue(k: number): boolean {
-    return k === 0 || this.tick(k) > this.tick(k - 1);
+    return isTick(k, this.dt, this.cfg.controlHz);
   }
 
   /** The action the ego receives at episode step k for the model's `action`. */
@@ -59,10 +57,6 @@ export class ActuatorModel {
     const steerCmd = Math.abs(steering) < c.steerDeadband ? 0 : steering;
     this.accel = this.lagGain === 1 ? accelCmd : this.accel + (accelCmd - this.accel) * this.lagGain;
     return { acceleration: this.accel, steering: steerCmd + this.steerBias / this.vehicle.maxSteer };
-  }
-
-  private tick(k: number): number {
-    return Math.floor(k * this.dt * this.cfg.controlHz + TICK_EPS);
   }
 
   private accept(action: DrivingAction, k: number): void {
