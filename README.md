@@ -186,6 +186,34 @@ The features always come from the sensed observation, encoded with the simulatio
 
 ---
 
+## Software-in-the-Loop
+
+The program that will drive the real car can drive Rushwick instead, over a WebSocket bridge. The car program is the WebSocket server; Rushwick connects to it, sends a `hello`, then one `frame` per physics step, and applies the `command` the car program sends back. The protocol lives in [`src/bridge/`](src/bridge/).
+
+| Direction | Message | Contents |
+| :--- | :--- | :--- |
+| Rushwick → car | `hello` | Protocol and feature version, profile, scale, `dt`, control rate, clock mode, latency mode, seed, sensor config |
+| Rushwick → car | `frame` | `seq`, `stamp` (sim time in s), `controlTick`, the sensed `observation`, driver-shaped copies of it (`scan`, `imu`, `odom`), and the privileged `teacher` action when requested |
+| Rushwick → car | `episode` | `start`, or `end` with the outcome and metrics |
+| Car → Rushwick | `command` | The `seq` of the frame it answers, `acceleration` in m/s², normalized `steering` |
+
+```jsonc
+{ "type": "frame", "seq": 120, "stamp": 4.0, "controlTick": true,
+  "observation": { /* sensed Observation, real units */ },
+  "scan": { "angle_min": 0, "angle_increment": 0.19635, "range_min": 0.05, "range_max": 12.0, "ranges": [] },
+  "imu": { "angular_velocity": { "z": 0.01 }, "linear_acceleration": { "x": 0.2 } },
+  "odom": { "twist": { "linear": { "x": 1.2 } } } }
+{ "type": "command", "seq": 120, "acceleration": 0.5, "steering": -0.1 }
+```
+
+- Units on the wire are real. Lengths, speeds and accelerations are divided by the profile's scale (10 for `rc-pi`); command accelerations are multiplied back. Angles, yaw rates, times and normalized steering are unchanged.
+- Numbers that are not finite, such as an unknown `timeLeft`, travel as `null`.
+- On frames without `controlTick` the platform ignores new commands, so the car program resends its last one.
+- To encode features like `encodeObservation()`, a car program converts the observation back to sim units and uses the `sensors` config from `hello`.
+- Field names follow ROS 2 (`sensor_msgs/LaserScan`, `sensor_msgs/Imu`, `nav_msgs/Odometry`), so a later ROS 2 bridge is a 1:1 mapping.
+
+---
+
 ## Metrics & Scoring
 
 Every episode ends with exactly one outcome:
@@ -299,6 +327,7 @@ src/
     runner/            runEpisode() for batch evaluation
     index.ts           public API: renderer, UI and scripts import only from here
   render/              read-only Three.js view (instanced meshes, city layers, camera, overlays)
+  bridge/              bridge protocol v1 to a car program: messages, validators, real ↔ sim units
   ui/                  React app: fixed-step loop, input, hooks, panels
 scripts/               headless runner and JSONL dataset recorder
 ```
