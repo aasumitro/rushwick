@@ -1,4 +1,5 @@
 import type { PedestrianSystem } from '../pedestrians';
+import type { ResolvedProfile } from '../platform';
 import type { SignalSystem } from '../traffic/signals';
 import type { VehicleSystem } from '../traffic/vehicles';
 import type { City } from '../world/types';
@@ -18,6 +19,8 @@ export const noEvents = (): StepEvents => ({ collisionVehicle: false, collisionP
 /** The parts of the simulation an ego episode needs. */
 export interface EpisodeHost {
   readonly config: SimConfig;
+  /** `config.profile` in sim units. */
+  readonly platform: ResolvedProfile;
   readonly city: City;
   readonly signals: SignalSystem;
   readonly traffic: VehicleSystem;

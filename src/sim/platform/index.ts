@@ -1,3 +1,4 @@
+export { ActuatorModel } from './actuators/actuatorModel';
 export type { ActuatorModelConfig } from './actuators/types';
 export { getProfile, isIdeal, PLATFORM_PROFILES } from './profiles';
 export { resolveProfile } from './scale';
