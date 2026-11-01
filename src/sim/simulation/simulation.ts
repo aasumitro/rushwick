@@ -51,10 +51,17 @@ export class Simulation extends CityWorld {
     if (!this.config.ego.enabled) return false;
     this.episode = EgoEpisode.start(this, this.rng.fork(`ego:${this.episodes++}`));
     this.reindex();
+    this.sense();
     return this.episode !== null;
   }
 
+  /** What the ego's platform perceives this step (exact for `ideal`). A pure read: call it any number of times. */
   observe(): Observation {
+    return this.episode?.models?.sensors.current ?? this.observeIdeal();
+  }
+
+  /** The exact observation, whatever the platform (privileged teachers, debugging). */
+  observeIdeal(): Observation {
     if (!this.episode) throw new Error('observe() requires an ego vehicle; call spawnEgo() first');
     return buildObservation(worldView(this, this.episode), this.config.sensors);
   }
@@ -69,7 +76,14 @@ export class Simulation extends CityWorld {
     const obstacle = ego ? { obb: ego.obb(), speed: ego.speed, heading: ego.heading } : null;
     this.advanceBackground(obstacle, this.episode?.blockedConnectors(this.city) ?? NONE);
     this.lastEvents = this.episode ? this.episode.step(this, action) : noEvents();
+    this.sense();
     return this.lastEvents;
+  }
+
+  /** Sensors sample once per physics step, here, so observe() call counts never change the RNG streams (D3). */
+  private sense(): void {
+    const ep = this.episode;
+    if (ep?.models && !ep.done) ep.models.sensors.update(worldView(this, ep));
   }
 
   /** Deterministic fingerprint of the dynamic state (see diagnostics.ts). */
