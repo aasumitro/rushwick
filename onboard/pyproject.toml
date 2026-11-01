@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rushwick-onboard"
+version = "0.1.0"
+description = "Reference car program for Rushwick: drives the simulator over the bridge now, the real car later"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.9"
+dependencies = ["websockets>=13", "numpy>=1.24"]
+
+[project.optional-dependencies]
+onnx = ["onnxruntime>=1.16"]
+test = ["pytest>=8"]
+
+[tool.setuptools]
+packages = ["rushwick_onboard"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

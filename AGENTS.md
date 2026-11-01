@@ -12,7 +12,7 @@ The same simulation runs in three places:
 - Vitest (`npm test`),
 - Node batch runs that evaluate agents and record imitation-learning datasets (`npm run sim:headless`).
 
-Stack: TypeScript 7 (strict), React 19, Three.js, Vite 8, Vitest 5, tsx. The only runtime dependencies are `react`, `react-dom` and `three`. `src/sim` has none.
+Stack: TypeScript 7 (strict), React 19, Three.js, Vite 8, Vitest 5, tsx. The only runtime dependencies are `react`, `react-dom` and `three`. `src/sim` has none. The reference car program in `onboard/` is Python 3.9+ with `websockets` and `numpy` (`onnxruntime` optional) and `pytest` for tests.
 
 User-facing documentation lives in `README.md`.
 
@@ -28,6 +28,8 @@ npm run build                # typecheck + production bundle in dist/
 npm run sim:headless -- --episodes 3 --seed 1   # headless smoke run with the rule-based agent
 npm run sim:bridge -- --mode lockstep --teacher # let a running car program drive over the bridge (ws://localhost:8765)
 npm run sim:golden           # regenerate onboard/tests/golden/encoder-v<FEATURE_VERSION>.json
+pip install -e "onboard[test]" && pytest onboard/tests   # reference car program (use a virtualenv)
+python -m rushwick_onboard --hardware sim --policy simple # car program for sim:bridge to connect to
 ```
 
 Node.js 22.12 or newer is required (Vitest engines). Development and CI use Node 26.
@@ -49,7 +51,9 @@ src/sim/        headless simulation core; its public API is src/sim/index.ts
 src/render/     read-only Three.js view of a Simulation
 src/ui/         React app, fixed-step frame loop, keyboard input, settings panels
 src/bridge/     bridge protocol v1 to a car program: messages, validators, real ↔ sim units, frame builder (pure TS)
-scripts/        headless runner (tsx), JSONL dataset recorder, bridge runner (scripts/bridge/)
+scripts/        headless runner (tsx), JSONL dataset recorder, bridge runner (scripts/bridge/), golden export
+onboard/        reference car program (Python package rushwick_onboard): hardware backends, loop, policies, safety layer,
+                encoder and unit ports, pytest suite with the encoder golden vectors
 ```
 
 Inside `src/sim`, imports only point down this stack (skipping layers is fine):
@@ -121,6 +125,13 @@ No formatter or linter is configured, so match the surrounding code.
 - Put tunable numbers in the existing config and tuning objects (`DEFAULT_*`, `TUNING`, `PENALTY`), not in scattered literals.
 - Comments explain why, not what. Write code, comments, docs and commit messages in English.
 
+### Python (`onboard/`)
+
+- Python 3.9+ (the Raspberry Pi runs 3.11): `from __future__ import annotations`, type hints, `typing` instead of `X | Y` at runtime.
+- 4-space indent, double quotes, snake_case modules. Files stay under 100 lines, like the TypeScript code.
+- Mirror the TypeScript contracts exactly: `encoder.py` follows `encoder.ts` (golden vectors), `units.py` follows `src/bridge/units.ts`, `loop.py` speaks bridge protocol v1.
+- Policies never command the hardware directly; everything goes through `safety.py`.
+
 ### Performance
 
 - The simulation steps hundreds of vehicles and pedestrians at 30 Hz, and batch runs execute thousands of episodes. Use `SpatialGrid` for neighbor queries instead of all-pairs scans, and do not allocate inside per-step hot loops.
@@ -151,7 +162,7 @@ No formatter or linter is configured, so match the surrounding code.
 
 ## Before you finish
 
-1. `npm run typecheck` and `npm test` pass. Also run `npm run build` when you changed `src/render`, `src/ui` or the Vite config.
+1. `npm run typecheck` and `npm test` pass. Also run `npm run build` when you changed `src/render`, `src/ui` or the Vite config, and `pytest onboard/tests` when you changed `onboard/`, the bridge protocol or the encoder.
 2. For visual or UI changes, run `npm run dev` and check the result in the browser.
 3. Update `README.md` when controls, CLI flags, observations, metrics, the baseline or the known limitations change.
 4. Work on a branch and open a pull request into `main`. CI (`.github/workflows/ci.yml`) runs the typecheck, build and tests, and it must pass.
