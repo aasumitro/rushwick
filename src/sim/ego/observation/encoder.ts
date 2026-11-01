@@ -1,6 +1,13 @@
 import { DEFAULT_SENSOR_CONFIG, type SensorConfig } from './sensorConfig';
 import type { Observation } from './types';
 
+/**
+ * Version of the `encodeObservation()` layout and scaling. Bump it whenever
+ * either changes: it is written into recorded JSONL rows, the encoder golden
+ * file and the bridge `hello` message, so stale datasets and models are caught.
+ */
+export const FEATURE_VERSION = 1;
+
 const EGO_F = 5;
 const WP_F = 3;
 const ROUTE_F = 3;

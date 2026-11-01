@@ -85,7 +85,8 @@ Recorded datasets, trained models and benchmark results depend on the items belo
 - `drivingScore()` and `PENALTY` in `src/sim/metrics/score.ts`.
 - `DEFAULT_SIM_CONFIG`, `DEFAULT_CITY_CONFIG`, `DEFAULT_EGO_PARAMS`, `DEFAULT_SENSOR_CONFIG`, and anything else that changes what a given seed generates.
 - The built-in platform profile values in `src/sim/platform/profiles/`. `SimConfig.profile` defaults to `'ideal'`, which must stay bit-identical to the behavior from before platform profiles existed (`idealProfile.test.ts` pins it).
-- The `sim:headless` CLI flags and the JSONL row format.
+- `FEATURE_VERSION` in `encoder.ts`. Bump it whenever the `encodeObservation()` layout or scaling changes; it is written into JSONL rows, the encoder golden file and the bridge `hello` message.
+- The `sim:headless` CLI flags (including `--profile` and `--teacher`) and the JSONL row format (`episode`, `t`, `profile`, `featureVersion`, `features`, `action`).
 
 `Observation.route.nextStop.timeLeft` is privileged information that a real AV does not have. If you add another privileged field, document it the same way. Realistic platform profiles hide it (`NaN`) and may report `nextStop.light` as `'unknown'`; the encoder maps both to values it already produced (time-left feature 1, all-zero light flags), so the layout does not change. Both are part of the observation contract.
 

@@ -156,10 +156,11 @@ What changes for a decision model:
 
 ## Headless Runs & Datasets
 
-Evaluate the rule-based agent in Node without a browser. Add `--record` to write `(features, action)` pairs as JSON Lines for imitation learning.
+Evaluate the rule-based agent in Node without a browser, on any [platform profile](#platform-profiles). Add `--record` to write `(features, action)` pairs as JSON Lines for imitation learning.
 
 ```sh
 npm run sim:headless -- --episodes 10 --seed 3 --record runs/expert.jsonl
+npm run sim:headless -- --episodes 10 --seed 3 --profile rc-pi --teacher ideal --record runs/rc-pi.jsonl
 ```
 
 | Option | Default | Description |
@@ -167,16 +168,20 @@ npm run sim:headless -- --episodes 10 --seed 3 --record runs/expert.jsonl
 | `--episodes N` | `5` | Number of episodes to run |
 | `--seed N` | `1` | City and traffic seed |
 | `--side left\|right` | `left` | Driving side |
-| `--vehicles N` | `260` | Background vehicles |
-| `--pedestrians N` | `520` | Pedestrians |
+| `--profile NAME` | `ideal` | Platform profile: `ideal`, `rc-pi` or `passenger-car` |
+| `--teacher ideal\|sensed` | `sensed` | What the expert acts on: the exact observation (a privileged teacher) or what the platform senses |
+| `--vehicles N` | the profile's (`260` for `ideal`) | Background vehicles |
+| `--pedestrians N` | the profile's (`520` for `ideal`) | Pedestrians |
 | `--record FILE` | none | Output JSONL file |
 | `--record-hz N` | `10` | Recording rate in Hz |
 
 Each recorded line has this shape:
 
 ```json
-{"episode":0,"t":1.2,"features":[0.41,0.02,...],"action":{"acceleration":1.5,"steering":-0.03}}
+{"episode":0,"t":1.2,"profile":"ideal","featureVersion":1,"features":[0.41,0.02,...],"action":{"acceleration":1.5,"steering":-0.03}}
 ```
+
+The features always come from the sensed observation, encoded with the simulation's own sensor config, so a model learns from what the platform will really see. To record datasets on a realistic profile, use `--teacher ideal`: the expert then acts on the exact observation and labels the sensed features with clean actions ("learning by cheating"), while its commands still go through the platform's actuators. `featureVersion` changes whenever the feature layout or scaling changes.
 
 ---
 
@@ -235,8 +240,8 @@ done
 
 On a realistic [platform profile](#platform-profiles) the same expert runs in two ways, over the same 18 episodes:
 
-- **Privileged teacher:** it acts on the exact observation (`sim.observeIdeal()`), but its commands still go through the platform's control rate, delay, lag, deadbands and steering error. Use this to record datasets.
-- **Sensed:** it acts on what the platform perceives (`sim.observe()`), as a learned model will.
+- **Privileged teacher** (`--teacher ideal`): it acts on the exact observation (`sim.observeIdeal()`), but its commands still go through the platform's control rate, delay, lag, deadbands and steering error. Use this to record datasets.
+- **Sensed** (`--teacher sensed`, the default): it acts on what the platform perceives (`sim.observe()`), as a learned model will.
 
 | Platform | Observations | Success | Stuck | Timeout | Collisions | Red lights | Off-road | Near-misses | Mean score |
 | :--- | :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -247,20 +252,14 @@ On a realistic [platform profile](#platform-profiles) the same expert runs in tw
 
 As a privileged teacher the expert stays safe on both platforms. On sensed observations it does not: noise, latency, occlusion and unknown lights cost it collisions and curb strikes. That gap is what a model trained on realistic observations has to close. The `rc-pi` track has no traffic or signals yet, so its episodes are short and only test lane keeping and turning.
 
-To reproduce a row, run the 18 episodes with the profile and act on `sim.observeIdeal()` (privileged) or `sim.observe()` (sensed):
+To reproduce a row, pick the profile and the teacher (`ideal` for the privileged rows, `sensed` for the others):
 
-```ts
-for (const side of ['left', 'right'] as const) {
-  for (const seed of [1, 2, 3]) {
-    const sim = new Simulation({ seed, profile: 'passenger-car', city: { drivingSide: side } });
-    for (let ep = 0; ep < 3; ep++) {
-      sim.spawnEgo();
-      const agent = new RuleBasedAgent();
-      while (!sim.episodeDone) sim.step(agent.act(sim.observeIdeal()));
-      console.log(sim.episodeMetrics());
-    }
-  }
-}
+```sh
+for side in left right; do
+  for seed in 1 2 3; do
+    npm run sim:headless -- --episodes 3 --seed "$seed" --side "$side" --profile passenger-car --teacher ideal
+  done
+done
 ```
 
 ---
