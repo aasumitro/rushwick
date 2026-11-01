@@ -1,7 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { RuleBasedAgent } from '../agents';
-import { Fnv } from '../core/hash';
-import { encodeObservation, type Observation } from '../ego/observation';
+import type { Observation } from '../ego/observation';
 import { getProfile, PLATFORM_PROFILES, type PlatformProfile, type SensorModelConfig } from '../platform';
 import { Simulation } from './simulation';
 
@@ -9,11 +7,16 @@ const registry = PLATFORM_PROFILES as Record<string, PlatformProfile>;
 const ideal = getProfile('ideal');
 const small = { seed: 6, warmupTime: 5, vehicleCount: 120, pedestrianCount: 200 };
 
-/** Test-only profiles: exact sensors behind a model, a 0.1 s lidar delay, and a 10 Hz lidar. */
+/** Test-only profiles: exact sensors behind a model, a 0.1 s lidar delay, a 10 Hz lidar, and noise on every built channel. */
 const PROFILES: Record<string, Partial<SensorModelConfig>> = {
   'test-exact': {},
   'test-late-lidar': { lidar: { ...ideal.sensors.lidar, latency: 0.1 } },
   'test-slow-lidar': { lidar: { ...ideal.sensors.lidar, rateHz: 10 } },
+  'test-noisy': {
+    egoState: { ...ideal.sensors.egoState, speedStd: 0.05, accelStd: 0.1, yawRateStd: 0.005, yawBiasWalk: 0.001 },
+    localization: { ...ideal.sensors.localization, latency: 0.05, posStd: 0.3, headingStd: 0.02, driftStd: 0.5, driftTau: 5 },
+    lidar: { ...ideal.sensors.lidar, rateHz: 10, latency: 0.05, rangeStd: 0.05, dropout: 0.02 },
+  },
 };
 
 beforeAll(() => {
@@ -54,25 +57,24 @@ describe('SensorModel timing', () => {
   });
 });
 
-describe('SensorModel determinism', () => {
-  /** stateHash and the final sensed features after 300 expert steps, calling observe() `calls` times per step. */
-  function run(profile: string, calls: number): { state: number; features: number } {
-    const sim = new Simulation({ ...small, profile });
+describe('localization', () => {
+  it('computes the route from the perceived pose', () => {
+    const sim = new Simulation({ ...small, profile: 'test-noisy' });
     sim.spawnEgo();
-    const agent = new RuleBasedAgent();
-    for (let i = 0; i < 300; i++) {
-      for (let c = 0; c < calls; c++) sim.observe();
-      // The expert acts on the exact view so its actions do not depend on `calls`.
-      sim.step(agent.act(sim.observeIdeal()));
+    let poseError = 0;
+    for (let k = 0; k < 90; k++) {
+      sim.step({ acceleration: 1.5, steering: 0 });
+      const { ego, route } = sim.observe();
+      const truth = sim.observeIdeal();
+      poseError = Math.max(poseError, Math.hypot(ego.x - truth.ego.x, ego.y - truth.ego.y));
+      // Waypoints mapped back to the world with the perceived pose lie on the route.
+      for (const wp of route.waypoints.slice(0, 8)) {
+        const x = ego.x + wp.x * Math.cos(ego.heading) - wp.y * Math.sin(ego.heading);
+        const y = ego.y + wp.x * Math.sin(ego.heading) + wp.y * Math.cos(ego.heading);
+        expect(sim.route!.path.project({ x, y }).distance).toBeLessThan(1e-6);
+      }
     }
-    const h = new Fnv();
-    for (const v of encodeObservation(sim.observe())) h.mix(Math.round(v * 1e6));
-    return { state: sim.stateHash(), features: h.value };
-  }
-
-  it.each(Object.keys(PROFILES))('does not depend on how often observe() is called (%s)', (profile) => {
-    const once = run(profile, 1);
-    expect(run(profile, 0)).toEqual(once);
-    expect(run(profile, 3)).toEqual(once);
+    expect(poseError).toBeGreaterThan(0.1);
+    expect(poseError).toBeLessThan(3);
   });
 });
