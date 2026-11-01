@@ -45,7 +45,7 @@ npm run dev
 Open http://localhost:3000. The ego car starts on **autopilot**, driven by the rule-based baseline.
 
 - **World panel:** platform profile, seed, driving side, signal mode, traffic and pedestrian density, jaywalking rate. Click **Regenerate city** to apply. Picking a platform resets the traffic sliders to that platform's world (an empty track for `rc-pi`).
-- **Runtime panel:** play, pause and single-step, new episode, decision model, camera, route, lidar and sensed-object overlays, auto-restart, and playback speed from 0.5× to 8×. Changes apply immediately.
+- **Runtime panel:** play, pause and single-step, new episode, decision model (including **Remote (WebSocket)**, a car program, see [Software-in-the-Loop](#software-in-the-loop)), camera, route, lidar and sensed-object overlays, auto-restart, and playback speed from 0.5× to 8×. Changes apply immediately.
 - **HUD:** speed, steering, platform, the delay of the newest command, the next signal, route progress and what the ego currently perceives. On a realistic platform the decision model, the lidar overlay and the **Show sensed objects** outlines all use the sensed observation, and manual driving goes through the platform's actuators too, so you can feel the delay.
 
 ### Controls
@@ -254,6 +254,10 @@ pytest onboard/tests                                                # encoder go
 | `onnx:<path>` | A trained model: encodes the observation like `encodeObservation()`; needs `pip install -e "onboard[onnx]"` |
 
 The lidar stop is off by default in SIL (`--no-lidar-stop`), because the simulated 2D lidar sees curbs as walls, see [Known Limitations](#known-limitations).
+
+### Watch a car program drive in the browser
+
+With a car program running, open the app, pick **Remote (WebSocket)** as the decision model and enter its URL (default `ws://localhost:8765`, applied on Enter). The browser then works like `--mode realtime`: every simulation step sends a frame, and the newest command received so far drives the car. If no command arrives for 250 ms, the car brakes fully. The HUD shows the connection state, the round trip of the newest command and when the watchdog brakes. To reconnect after the car program restarts, pick the remote model again. The browser keeps modeling the profile's compute delay on top of the real one, so measure latency with `sim:bridge --mode realtime` instead.
 
 ---
 

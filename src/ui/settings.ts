@@ -1,7 +1,7 @@
 import type { CameraMode } from '../render/camera/cameraRig';
 import type { DrivingSide } from '../sim';
 
-export type AgentKind = 'autopilot' | 'manual' | 'idle';
+export type AgentKind = 'autopilot' | 'manual' | 'idle' | 'remote';
 
 /** Settings that require regenerating the city when changed. */
 export interface WorldSettings {
@@ -18,6 +18,8 @@ export interface WorldSettings {
 /** Settings that apply live. */
 export interface LiveSettings {
   agent: AgentKind;
+  /** Car program WebSocket for the 'remote' decision model. */
+  remoteUrl: string;
   camera: CameraMode;
   speed: number;
   paused: boolean;
@@ -40,6 +42,7 @@ export const DEFAULT_WORLD: WorldSettings = {
 
 export const DEFAULT_LIVE: LiveSettings = {
   agent: 'autopilot',
+  remoteUrl: 'ws://localhost:8765',
   camera: 'chase',
   speed: 1,
   paused: false,

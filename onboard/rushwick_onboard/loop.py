@@ -23,6 +23,7 @@ async def run(hw: Hardware, make_policy: PolicyFactory, safety: Safety, log: Cal
     last = Command(0.0, 0.0)
     last_seq = -1
     handled = 0
+    braking = False
     while max_messages is None or handled < max_messages:
         realtime = hello is not None and hello["mode"] == "realtime"
         started = time.monotonic()
@@ -31,8 +32,11 @@ async def run(hw: Hardware, make_policy: PolicyFactory, safety: Safety, log: Cal
         if msg is None:
             if last_seq >= 0:
                 await hw.write_command(last_seq, safety.watchdog())
-            log(f"no frame for {time.monotonic() - started:.3f} s: braking")
+            if not braking:
+                log(f"no frame for {time.monotonic() - started:.3f} s: braking until frames return")
+            braking = True
             continue
+        braking = False
         kind = msg.get("type")
         if kind == "hello":
             if msg["protocol"] != PROTOCOL_VERSION:

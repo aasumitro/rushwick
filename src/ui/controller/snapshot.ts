@@ -1,4 +1,5 @@
 import { isIdeal, type EpisodeMetrics, type Observation, type Simulation } from '../../sim';
+import type { RemoteStatus } from './remoteAgent';
 
 /** Plain data the HUD renders; produced a few times per second. */
 export interface HudSnapshot {
@@ -11,6 +12,8 @@ export interface HudSnapshot {
   platform: string;
   /** Delay of the newest command (ms); null when the platform applies commands instantly. */
   commandDelayMs: number | null;
+  /** Connection of the remote decision model; null for in-browser models. */
+  remote: RemoteStatus | null;
   egoSpeedKmh: number;
   steerDeg: number;
   progress: number;
@@ -21,7 +24,7 @@ export interface HudSnapshot {
   metrics: EpisodeMetrics | null;
 }
 
-export function takeSnapshot(sim: Simulation, obs: Observation | null, fps: number): HudSnapshot {
+export function takeSnapshot(sim: Simulation, obs: Observation | null, fps: number, remote: RemoteStatus | null): HudSnapshot {
   const vs = sim.vehicles;
   const stop = obs?.route.nextStop ?? null;
   const metrics = sim.episodeMetrics();
@@ -34,6 +37,7 @@ export function takeSnapshot(sim: Simulation, obs: Observation | null, fps: numb
     episode: sim.episodes,
     platform: sim.platform.label,
     commandDelayMs: isIdeal(sim.platform) ? null : sim.commandDelay * 1000,
+    remote: remote && { ...remote },
     egoSpeedKmh: (sim.ego?.speed ?? 0) * 3.6,
     steerDeg: ((sim.ego?.steer ?? 0) * 180) / Math.PI,
     progress: metrics?.completion ?? 0,

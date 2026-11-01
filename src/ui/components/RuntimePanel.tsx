@@ -1,6 +1,6 @@
 import { AGENT_LABELS } from '../controller/agentFactory';
 import { CAMERA_MODES, SPEEDS, type AgentKind, type LiveSettings } from '../settings';
-import { Field, Select, Toggle } from './fields';
+import { CommitInput, Field, Select, Toggle } from './fields';
 
 interface Props {
   live: LiveSettings;
@@ -30,6 +30,11 @@ export function RuntimePanel({ live, onChange, onStep, onNewEpisode }: Props) {
       <Field label="Decision model">
         <Select value={live.agent} options={AGENTS} onChange={(v) => set('agent', v)} />
       </Field>
+      {live.agent === 'remote' && (
+        <Field label="Car program">
+          <CommitInput value={live.remoteUrl} onCommit={(v) => set('remoteUrl', v)} />
+        </Field>
+      )}
       <Field label="Camera">
         <Select value={live.camera} options={CAMERA_MODES.map((c) => ({ value: c, label: c }))} onChange={(v) => set('camera', v)} />
       </Field>
