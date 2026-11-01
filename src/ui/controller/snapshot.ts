@@ -1,4 +1,4 @@
-import type { EpisodeMetrics, Observation, Simulation } from '../../sim';
+import { isIdeal, type EpisodeMetrics, type Observation, type Simulation } from '../../sim';
 
 /** Plain data the HUD renders; produced a few times per second. */
 export interface HudSnapshot {
@@ -8,6 +8,9 @@ export interface HudSnapshot {
   pedestrians: number;
   meanTrafficSpeed: number;
   episode: number;
+  platform: string;
+  /** Delay of the newest command (ms); null when the platform applies commands instantly. */
+  commandDelayMs: number | null;
   egoSpeedKmh: number;
   steerDeg: number;
   progress: number;
@@ -29,6 +32,8 @@ export function takeSnapshot(sim: Simulation, obs: Observation | null, fps: numb
     pedestrians: sim.pedestrians.peds.length,
     meanTrafficSpeed: vs.length ? (vs.reduce((a, v) => a + v.speed, 0) / vs.length) * 3.6 : 0,
     episode: sim.episodes,
+    platform: sim.platform.label,
+    commandDelayMs: isIdeal(sim.platform) ? null : sim.commandDelay * 1000,
     egoSpeedKmh: (sim.ego?.speed ?? 0) * 3.6,
     steerDeg: ((sim.ego?.steer ?? 0) * 180) / Math.PI,
     progress: metrics?.completion ?? 0,

@@ -13,6 +13,10 @@ export function Hud({ s }: { s: HudSnapshot }) {
       <div className="hud-grid">
         <span>Steer</span>
         <b>{s.steerDeg.toFixed(1)}°</b>
+        <span>Platform</span>
+        <b>{s.platform}</b>
+        <span>Command delay</span>
+        <b>{s.commandDelayMs === null ? 'none' : `${s.commandDelayMs.toFixed(0)} ms`}</b>
         <span>Next signal</span>
         <b className={LIGHT_CLASS[s.nextLight] ?? ''}>
           {s.nextLight}

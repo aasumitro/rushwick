@@ -21,4 +21,5 @@ export const PALETTE = {
   ego: 0xf5f7fa,
   route: 0x22d3ee,
   lidar: 0xff5ca8,
+  sensed: 0xffd166,
 } as const;

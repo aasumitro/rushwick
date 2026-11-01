@@ -13,14 +13,9 @@ import { createTrees } from './city/vegetationLayer';
 import { interpolate } from './core/coords';
 import { createStage, followSun, type Stage } from './core/createStage';
 import { disposeObject } from './core/dispose';
-import { LidarOverlay } from './overlays/lidarOverlay';
-import { RouteOverlay } from './overlays/routeOverlay';
+import { OverlaySet, type OverlayOptions } from './overlays/overlaySet';
 
-export interface RenderOptions {
-  showRoute: boolean;
-  showLidar: boolean;
-  lidar: readonly number[] | null;
-}
+export type RenderOptions = OverlayOptions;
 
 /** Read-only 3D view of a Simulation. Rebuild the static city with `load()` after a reset. */
 export class CityRenderer {
@@ -31,14 +26,13 @@ export class CityRenderer {
   private vehicles: VehicleLayer | null = null;
   private peds: PedestrianLayer | null = null;
   private readonly ego = new EgoActor();
-  private readonly route = new RouteOverlay();
-  private lidar: LidarOverlay | null = null;
+  private readonly overlays = new OverlaySet();
   private lastFrame = performance.now();
 
   constructor(private readonly container: HTMLElement) {
     this.stage = createStage(container);
     this.rig = new CameraRig(this.stage.renderer.domElement);
-    this.stage.scene.add(this.ego.group, this.route.line);
+    this.stage.scene.add(this.ego.group, this.overlays.group);
     this.resize();
   }
 
@@ -50,7 +44,6 @@ export class CityRenderer {
     this.signals = new SignalLayer(city);
     this.vehicles = new VehicleLayer(Math.max(64, sim.vehicles.length + 32));
     this.peds = new PedestrianLayer(Math.max(64, sim.pedestrians.peds.length + 32));
-    this.lidar = new LidarOverlay(sim.config.sensors.lidarRays);
     this.world.add(
       createGround(city),
       createBlocks(city),
@@ -60,8 +53,8 @@ export class CityRenderer {
       this.signals.group,
       this.vehicles.group,
       this.peds.group,
-      this.lidar.lines,
     );
+    this.overlays.load(sim, this.world);
     this.stage.scene.add(this.world);
   }
 
@@ -77,8 +70,7 @@ export class CityRenderer {
     this.vehicles?.update(sim.vehicles, alpha);
     this.peds?.update(sim.pedestrians.peds, alpha);
     this.ego.update(sim.ego, alpha);
-    this.route.update(sim.route, opts.showRoute);
-    this.lidar?.update(sim.ego, opts.lidar, opts.showLidar);
+    this.overlays.update(sim, alpha, opts);
     this.rig.update(sim.ego ? interpolate(sim.ego, alpha) : null, dt);
     followSun(this.stage.sun, this.rig.controls.target);
     this.stage.renderer.render(this.stage.scene, this.rig.camera);

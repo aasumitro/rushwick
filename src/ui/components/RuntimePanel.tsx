@@ -35,6 +35,7 @@ export function RuntimePanel({ live, onChange, onStep, onNewEpisode }: Props) {
       </Field>
       <Toggle label="Show route" checked={live.showRoute} onChange={(v) => set('showRoute', v)} />
       <Toggle label="Show lidar rays" checked={live.showLidar} onChange={(v) => set('showLidar', v)} />
+      <Toggle label="Show sensed objects" checked={live.showSensed} onChange={(v) => set('showSensed', v)} />
       <Toggle label="Auto-restart episodes" checked={live.autoRestart} onChange={(v) => set('autoRestart', v)} />
     </section>
   );
