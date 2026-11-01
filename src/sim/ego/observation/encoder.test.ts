@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { Simulation } from '../../simulation';
-import { encodeObservation, featureSize } from './encoder';
+import { encodeObservation, FEATURE_VERSION, featureSize } from './encoder';
 
 describe('observation encoder', () => {
+  it('pins the layout to its version (bump FEATURE_VERSION and the golden file together with the layout)', () => {
+    expect([FEATURE_VERSION, featureSize()]).toEqual([1, 258]);
+  });
+
   it('produces a fixed-length, finite, roughly unit-scaled vector', () => {
     const sim = new Simulation({ seed: 9, warmupTime: 5, vehicleCount: 150, pedestrianCount: 200 });
     sim.spawnEgo();

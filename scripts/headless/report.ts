@@ -1,7 +1,8 @@
 import type { EpisodeMetrics } from '../../src/sim';
 
 /** Per-episode table plus an aggregate summary, printed to stdout. */
-export function printReport(results: EpisodeMetrics[]): void {
+export function printReport(results: EpisodeMetrics[], profile: string, teacher: string): void {
+  console.log(`profile ${profile} · expert acts on ${teacher === 'ideal' ? 'exact (privileged)' : 'sensed'} observations`);
   console.table(
     results.map((m, i) => ({
       ep: i,

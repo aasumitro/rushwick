@@ -4,10 +4,16 @@ import type { EpisodeMetrics } from '../metrics';
 import { Simulation, type SimConfigInput } from '../simulation';
 
 export interface EpisodeOptions {
-  /** Called every control step (e.g. to record observation/action pairs). */
+  /** Called every step with the sensed observation (e.g. to record observation/action pairs). */
   onStep?: (obs: Observation, action: DrivingAction, sim: Simulation) => void;
   /** Reuse an existing simulation instead of building a fresh city. */
   sim?: Simulation;
+  /**
+   * Let the agent act on the exact observation (`observeIdeal()`), a privileged
+   * teacher for recording datasets (design decision D7). Its commands still go
+   * through the platform's actuators, and `onStep` still gets the sensed view.
+   */
+  privileged?: boolean;
 }
 
 /** Run one closed-loop episode of `agent` and return its metrics. */
@@ -17,7 +23,7 @@ export function runEpisode(config: SimConfigInput, agent: DrivingAgent, opts: Ep
   agent.reset?.();
   while (!sim.episodeDone) {
     const obs = sim.observe();
-    const action = agent.act(obs);
+    const action = agent.act(opts.privileged ? sim.observeIdeal() : obs);
     opts.onStep?.(obs, action, sim);
     sim.step(action);
   }
