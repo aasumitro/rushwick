@@ -6,6 +6,8 @@ export type AgentKind = 'autopilot' | 'manual' | 'idle';
 /** Settings that require regenerating the city when changed. */
 export interface WorldSettings {
   seed: number;
+  /** Platform profile name (PLATFORM_PROFILES); it can change the world, so it regenerates the city. */
+  profile: string;
   drivingSide: DrivingSide;
   signalMode: 'mixed' | 'protected';
   vehicleCount: number;
@@ -21,11 +23,14 @@ export interface LiveSettings {
   paused: boolean;
   showRoute: boolean;
   showLidar: boolean;
+  /** Outline what the ego's sensors report next to the true road users. */
+  showSensed: boolean;
   autoRestart: boolean;
 }
 
 export const DEFAULT_WORLD: WorldSettings = {
   seed: 42,
+  profile: 'ideal',
   drivingSide: 'left',
   signalMode: 'mixed',
   vehicleCount: 260,
@@ -40,6 +45,7 @@ export const DEFAULT_LIVE: LiveSettings = {
   paused: false,
   showRoute: true,
   showLidar: false,
+  showSensed: false,
   autoRestart: true,
 };
 

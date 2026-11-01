@@ -44,8 +44,9 @@ npm run dev
 
 Open http://localhost:3000. The ego car starts on **autopilot**, driven by the rule-based baseline.
 
-- **World panel:** seed, driving side, signal mode, traffic and pedestrian density, jaywalking rate. Click **Regenerate city** to apply.
-- **Runtime panel:** play, pause and single-step, new episode, decision model, camera, route and lidar overlays, auto-restart, and playback speed from 0.5× to 8×. Changes apply immediately.
+- **World panel:** platform profile, seed, driving side, signal mode, traffic and pedestrian density, jaywalking rate. Click **Regenerate city** to apply. Picking a platform resets the traffic sliders to that platform's world (an empty track for `rc-pi`).
+- **Runtime panel:** play, pause and single-step, new episode, decision model, camera, route, lidar and sensed-object overlays, auto-restart, and playback speed from 0.5× to 8×. Changes apply immediately.
+- **HUD:** speed, steering, platform, the delay of the newest command, the next signal, route progress and what the ego currently perceives. On a realistic platform the decision model, the lidar overlay and the **Show sensed objects** outlines all use the sensed observation, and manual driving goes through the platform's actuators too, so you can feel the delay.
 
 ### Controls
 

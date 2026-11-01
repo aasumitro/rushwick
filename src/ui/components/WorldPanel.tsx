@@ -1,6 +1,9 @@
 import { useState } from 'react';
+import { PLATFORM_PROFILES, resolveConfig } from '../../sim';
 import type { WorldSettings } from '../settings';
 import { Field, Select, Slider } from './fields';
+
+const PLATFORMS = Object.values(PLATFORM_PROFILES).map((p) => ({ value: p.name, label: p.label }));
 
 interface Props {
   world: WorldSettings;
@@ -11,9 +14,17 @@ interface Props {
 export function WorldPanel({ world, onApply }: Props) {
   const [draft, setDraft] = useState(world);
   const set = <K extends keyof WorldSettings>(key: K, value: WorldSettings[K]) => setDraft({ ...draft, [key]: value });
+  // Traffic sliders always win over the profile, so start them at the platform's own world (an empty track for rc-pi).
+  const setProfile = (profile: string) => {
+    const cfg = resolveConfig({ profile });
+    setDraft({ ...draft, profile, vehicleCount: cfg.vehicleCount, pedestrianCount: cfg.pedestrianCount });
+  };
   return (
     <section className="panel-section">
       <h3>City</h3>
+      <Field label="Platform">
+        <Select value={draft.profile} options={PLATFORMS} onChange={setProfile} />
+      </Field>
       <Field label="Seed">
         <input type="number" value={draft.seed} onChange={(e) => set('seed', Math.trunc(Number(e.target.value)) || 0)} />
       </Field>

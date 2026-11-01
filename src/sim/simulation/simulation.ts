@@ -46,6 +46,11 @@ export class Simulation extends CityWorld {
     return this.episode?.controlDue ?? true;
   }
 
+  /** Delay of the newest accepted command on its way to the wheels (s); 0 without an actuator model. */
+  get commandDelay(): number {
+    return (this.episode?.models?.actuators.lastDelaySteps ?? 0) * this.config.dt;
+  }
+
   /** Place the ego with a fresh random route; starts a new episode. */
   spawnEgo(): boolean {
     if (!this.config.ego.enabled) return false;

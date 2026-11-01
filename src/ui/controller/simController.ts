@@ -27,6 +27,7 @@ export class SimController {
   loadWorld(w: WorldSettings): void {
     const sim = new Simulation({
       seed: w.seed,
+      profile: w.profile,
       city: { drivingSide: w.drivingSide, signalMode: w.signalMode },
       vehicleCount: w.vehicleCount,
       pedestrianCount: w.pedestrianCount,
@@ -77,7 +78,7 @@ export class SimController {
       d.maybeRestart(realDt, this.live.autoRestart);
       alpha = r.alpha;
     }
-    if (d) this.renderer.render(d.sim, alpha, { ...this.live, lidar: d.lastObs?.lidar ?? null });
+    if (d) this.renderer.render(d.sim, alpha, { ...this.live, sensed: d.lastObs });
     this.frame = requestAnimationFrame(this.tick);
   };
 }

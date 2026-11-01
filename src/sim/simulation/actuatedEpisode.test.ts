@@ -28,6 +28,7 @@ describe('Simulation with an actuator model', () => {
       speed.push(sim.ego!.speed);
     }
     expect(due).toEqual([true, false, false, true, false, false, true]);
+    expect(sim.commandDelay).toBeCloseTo(0.1, 9);
     expect(speed.slice(0, 3)).toEqual([0, 0, 0]);
     expect(speed[3]).toBeGreaterThan(0);
   });
@@ -42,5 +43,9 @@ describe('Simulation with an actuator model', () => {
     };
     expect(run(NAME)).toBe(run(NAME));
     expect(run(NAME)).not.toBe(run('ideal'));
+    const ideal = new Simulation({ ...small, profile: 'ideal' });
+    ideal.spawnEgo();
+    ideal.step({ acceleration: 1, steering: 0 });
+    expect(ideal.commandDelay).toBe(0);
   });
 });
