@@ -393,9 +393,11 @@ npm run build        # typecheck + production bundle in dist/
 npm test             # Vitest: geometry, city generation, signals, traffic, determinism, encoder, expert agent
 npm run test:watch   # Vitest in watch mode
 npm run preview      # serve the production build
+pytest onboard/tests # the reference car program (after pip install -e "onboard[test]")
+npm run sim:echo-check -- --seed 3   # SIL echo check against a running `python -m rushwick_onboard --policy echo`
 ```
 
-CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs the typecheck, build and tests on every push to `main` and on every pull request.
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every push to `main` and on every pull request. One job runs the typecheck, build and tests. A second job tests the car program with pytest and runs the SIL echo check: the car program echoes the privileged teacher over the bridge, and the run must match an in-process run of the same teacher bit for bit (same metrics, same `stateHash()`).
 
 ---
 
