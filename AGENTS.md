@@ -39,6 +39,7 @@ src/sim/        headless simulation core; its public API is src/sim/index.ts
   traffic/      signal controller and background vehicles (IDM, lane changes, junction reservations)
   pedestrians/  sidewalk navigation, crossing rules, jaywalking
   ego/          ego dynamics, route planning, observation building and feature encoding
+  platform/     platform profiles in real units (ideal, ...) and their conversion to sim units
   agents/       DrivingAgent interface and built-in agents (rule-based, manual, idle)
   simulation/   CityWorld (background world), Simulation (adds the ego episode), config, diagnostics
   metrics/      episode metrics and the composite score
@@ -51,8 +52,10 @@ scripts/        headless runner (tsx) and JSONL dataset recorder
 Inside `src/sim`, imports only point down this stack (skipping layers is fine):
 
 ```
-runner → agents, simulation → ego → pedestrians → traffic → world → core
+runner → agents, simulation → platform → ego → pedestrians → traffic → world → core
 ```
+
+`platform` imports only `ego`, `world` (types) and `core`.
 
 `metrics` imports nothing. Tests are the only files allowed to import upward.
 
@@ -80,6 +83,7 @@ Recorded datasets, trained models and benchmark results depend on the items belo
 - `Observation` and `DrivingAction` fields, units, frames and sign conventions.
 - `drivingScore()` and `PENALTY` in `src/sim/metrics/score.ts`.
 - `DEFAULT_SIM_CONFIG`, `DEFAULT_CITY_CONFIG`, `DEFAULT_EGO_PARAMS`, `DEFAULT_SENSOR_CONFIG`, and anything else that changes what a given seed generates.
+- The built-in platform profile values in `src/sim/platform/profiles/`. `SimConfig.profile` defaults to `'ideal'`, which must stay bit-identical to the behavior from before platform profiles existed (`idealProfile.test.ts` pins it).
 - The `sim:headless` CLI flags and the JSONL row format.
 
 `Observation.route.nextStop.timeLeft` is privileged information that a real AV does not have. If you add another privileged field, document it the same way.
@@ -134,6 +138,7 @@ No formatter or linter is configured, so match the surrounding code.
 - **New observation field.** Update `src/sim/ego/observation/types.ts`, the matching sensor file, `builder.ts`, `encoder.ts` and its size constants, `encoder.test.ts`, and the README observation section. This is a contract change.
 - **New metric.** Update `src/sim/metrics/types.ts` and `tracker.ts`, and `score.ts` only if the metric is an infraction. Then show it in `src/ui/components/MetricsPanel.tsx` and `scripts/headless/report.ts`, and document it in the README.
 - **New vehicle kind.** Add it to `src/sim/traffic/vehicles/specs.ts`, then add a 3D model to `MODELS` in `src/render/agents/vehicleLayer.ts`.
+- **New platform profile.** Write it in real units (as measured on the bench) as one file in `src/sim/platform/profiles/`, register it in `PLATFORM_PROFILES`, and note the date and method next to every measured value. `resolveProfile()` converts it to sim units; never pre-scale values by hand. World defaults go in `profile.world` (sim units) and lose to explicit input.
 - **New city generation stage.** Write it as one file in `src/sim/world/generator/` and call it in order from `generateCity()` in `index.ts`. If the stage is random, give it its own `rng.fork()` label.
 - **New UI setting.** Add it to `src/ui/settings.ts`. `WorldSettings` regenerate the city (`WorldPanel`, `SimController.loadWorld`). `LiveSettings` apply immediately (`RuntimePanel`, `SimController.applyLive`).
 
