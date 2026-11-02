@@ -44,7 +44,7 @@ async function main(): Promise<void> {
   const conn = await connect(values.url, Number(values['wait-ms']));
   conn.send(buildHello(bridged, 'lockstep'));
   const log = new StepLog(null);
-  const viaBridge = await runLockstep(bridged, conn, log, { episodes, teacher: true, timeoutMs: 5000 });
+  const viaBridge = await runLockstep(bridged, conn, log, { episodes, minutes: null, teacher: true, timeoutMs: 5000 });
   conn.close();
 
   const local = new Simulation(config);

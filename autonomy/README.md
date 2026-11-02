@@ -27,6 +27,7 @@ autonomy/
 | Module | Role |
 | :--- | :--- |
 | `cli.py`, `app.py` | Command line (hardware backend, listen address, policy, speed cap, lidar stop, board config, `--actuate`) and the wiring that runs it |
+| `events.py`, `stats.py`, `report.py` | HIL event log (`--log`: frame and policy timings, watchdog, the Git commit), 1 Hz system stats from `vcgencmd` or `tegrastats`, and `python -m rushwick_autonomy.report board.jsonl --bridge hil.jsonl` |
 | `outputs.py`, `heartbeat.py` | With `--actuate`: every safe command mirrored to the servo and ESC, and a 20 Hz GPIO heartbeat for the hardware watchdog |
 | `hardware.py` | `Hardware` protocol; `SimHardware` is the WebSocket server Rushwick connects to; `RealHardware` is a stub until Phase C |
 | `loop.py` | Runs the policy on control-tick frames and resends the last command otherwise; the frame `stamp` is the clock in lockstep, a 200 ms wall-clock watchdog brakes in realtime |

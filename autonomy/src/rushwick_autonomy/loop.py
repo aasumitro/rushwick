@@ -6,6 +6,7 @@ import time
 from typing import Any, Callable, Dict, Optional
 
 from .encoder import FEATURE_VERSION
+from .events import EventLog
 from .hardware import Hardware
 from .outputs import CommandSink
 from .policy import Policy
@@ -23,10 +24,12 @@ async def run(
     log: Callable[[str], None] = print,
     max_messages: Optional[int] = None,
     sink: Optional[CommandSink] = None,
+    events: Optional[EventLog] = None,
 ) -> None:
     """Serve forever (or `max_messages`, for tests). In lockstep the frame `stamp` is the
     only clock; in realtime a wall-clock watchdog brakes when frames stop arriving. Every
-    command also goes to `sink` (the real servo and ESC with --actuate)."""
+    command also goes to `sink` (the real servo and ESC with --actuate); `events` logs timings."""
+    ev = events or EventLog(None)
     hello: Optional[Dict[str, Any]] = None
     policy: Optional[Policy] = None
     last = Command(0.0, 0.0)
@@ -44,6 +47,7 @@ async def run(
                 await hw.write_command(last_seq, brake)
             if sink is not None:
                 sink.command(brake, None)
+            ev.write("watchdog", seq=last_seq)
             if not braking:
                 log(f"no frame for {time.monotonic() - started:.3f} s: braking until frames return")
             braking = True
@@ -56,6 +60,7 @@ async def run(
             if msg["featureVersion"] != FEATURE_VERSION:
                 log(f"warning: feature version {msg['featureVersion']} (encoder: {FEATURE_VERSION})")
             hello, policy, last_seq = msg, make_policy(msg), -1
+            ev.write("hello", profile=msg["profile"], mode=msg["mode"], controlHz=msg["controlHz"])
             log(f"hello: profile {msg['profile']} (scale {msg['scale']}), {msg['mode']}, {msg['controlHz']:g} Hz control")
         elif kind == "episode" and policy is not None:
             if msg["event"] == "start":
@@ -64,12 +69,16 @@ async def run(
             else:
                 log(f"episode {msg['index']}: {msg['outcome']}")
         elif kind == "frame" and policy is not None:
+            received, policy_ms = time.perf_counter(), None
             if msg["controlTick"]:
-                last = safety.check(policy.act(msg), msg["observation"])
+                proposed = policy.act(msg)
+                policy_ms = (time.perf_counter() - received) * 1000
+                last = safety.check(proposed, msg["observation"])
             last_seq = msg["seq"]
             await hw.write_command(last_seq, last)
             if sink is not None:
                 sink.command(last, msg)
+            ev.write("frame", seq=last_seq, policy_ms=policy_ms, handle_ms=(time.perf_counter() - received) * 1000)
         elif kind == "disconnected":
             hello, policy, last_seq = None, None, -1
             log(f"Rushwick disconnected; safety interventions so far: {dict(safety.interventions)}")

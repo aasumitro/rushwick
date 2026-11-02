@@ -1,7 +1,7 @@
 import { buildFrame, commandToAction } from '../../src/bridge';
 import type { DrivingAction, EpisodeMetrics, Simulation } from '../../src/sim';
 import type { CarConnection } from './connection';
-import { endEpisode, startEpisode, type RunOptions } from './lockstep';
+import { anotherEpisode, endEpisode, startEpisode, type RunOptions } from './lockstep';
 import type { StepLog } from './stepLog';
 
 /** Without a fresh command for this long, the sim brakes fully, mirroring the watchdog on the car. */
@@ -22,7 +22,8 @@ export async function runRealtime(sim: Simulation, conn: CarConnection, log: Ste
   const arrivals = new Map<number, number>();
   conn.onCommand = (r) => arrivals.set(r.cmd.seq, r.at);
   const results: EpisodeMetrics[] = [];
-  for (let ep = 0; ep < o.episodes; ep++) {
+  const runStart = performance.now();
+  for (let ep = 0; anotherEpisode(o, ep, runStart); ep++) {
     const teacher = startEpisode(sim, conn, ep, o.teacher);
     const started = performance.now();
     const firstSeq = sim.steps;
@@ -42,7 +43,7 @@ export async function runRealtime(sim: Simulation, conn: CarConnection, log: Ste
       const action = fresh ? commandToAction(latest.cmd, scale) : quiet ? brake : { acceleration: 0, steering: 0 };
       const command = fresh ? { acceleration: latest.cmd.acceleration, steering: latest.cmd.steering } : null;
       const rttMs = arrived === undefined ? null : arrived - sent;
-      log.add({ seq: frame.seq, stamp: frame.stamp, rttMs, command, deadlineMiss: frame.controlTick && rttMs === null, watchdog: quiet }, frame.controlTick);
+      log.add({ seq: frame.seq, stamp: frame.stamp, controlTick: frame.controlTick, rttMs, command, deadlineMiss: frame.controlTick && rttMs === null, watchdog: quiet });
       sim.step(action);
     }
     results.push(endEpisode(sim, conn, ep));
