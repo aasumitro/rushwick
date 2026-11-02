@@ -1,9 +1,9 @@
 import numpy as np
 import pytest
 
-from rushwick_onboard import Command
-from rushwick_onboard.lane_keeper import SimpleLaneKeeper
-from rushwick_onboard.policy import EchoPolicy, OnnxPolicy
+from rushwick_autonomy import Command
+from rushwick_autonomy.lane_keeper import SimpleLaneKeeper
+from rushwick_autonomy.policy import EchoPolicy, OnnxPolicy
 
 
 def wire_case(golden):

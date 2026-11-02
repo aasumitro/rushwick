@@ -48,7 +48,7 @@ class OnnxPolicy:
         try:
             import onnxruntime as ort
         except ImportError as e:
-            raise RuntimeError("OnnxPolicy needs onnxruntime: pip install -e 'onboard[onnx]'") from e
+            raise RuntimeError("OnnxPolicy needs onnxruntime: pip install -e 'autonomy[onnx]'") from e
         return cls(ort.InferenceSession(path), hello)
 
     def reset(self) -> None:

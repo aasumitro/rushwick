@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from rushwick_onboard import FEATURE_VERSION
+from rushwick_autonomy import FEATURE_VERSION
 
 GOLDEN = Path(__file__).parent / "golden" / f"encoder-v{FEATURE_VERSION}.json"
 

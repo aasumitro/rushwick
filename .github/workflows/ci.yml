@@ -35,8 +35,8 @@ jobs:
       - name: Test
         run: npm test
 
-  onboard:
-    name: Car program tests and SIL echo check
+  autonomy:
+    name: Autonomy tests and SIL echo check
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -53,18 +53,18 @@ jobs:
         with:
           python-version: '3.12'
           cache: pip
-          cache-dependency-path: onboard/pyproject.toml
+          cache-dependency-path: autonomy/pyproject.toml
 
       - run: npm ci
 
-      - name: Install the car program
-        run: pip install -e "onboard[test]"
+      - name: Install the driving stack
+        run: pip install -e "autonomy[test]"
 
-      - name: Test the car program
-        run: pytest onboard/tests
+      - name: Test the driving stack
+        run: pytest autonomy/tests
 
-      # The car program echoes the privileged teacher, so the bridge run must match an in-process run bit for bit.
+      # The driving stack echoes the privileged teacher, so the bridge run must match an in-process run bit for bit.
       - name: SIL echo check
         run: |
-          python -m rushwick_onboard --hardware sim --listen 127.0.0.1:8765 --policy echo > onboard.log 2>&1 &
-          npm run sim:echo-check -- --url ws://127.0.0.1:8765 --profile ideal --seed 3 --episodes 1 || { cat onboard.log; exit 1; }
+          rushwick-autonomy --hardware sim --listen 127.0.0.1:8765 --policy echo > autonomy.log 2>&1 &
+          npm run sim:echo-check -- --url ws://127.0.0.1:8765 --profile ideal --seed 3 --episodes 1 || { cat autonomy.log; exit 1; }

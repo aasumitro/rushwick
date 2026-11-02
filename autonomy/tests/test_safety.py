@@ -1,7 +1,7 @@
 import math
 
-from rushwick_onboard import Command, Safety, SafetyConfig
-from rushwick_onboard.safety import FULL_BRAKE
+from rushwick_autonomy import Command, Safety, SafetyConfig
+from rushwick_autonomy.safety import FULL_BRAKE
 
 
 def observation(speed=1.0, limit=1.4, rays=None):

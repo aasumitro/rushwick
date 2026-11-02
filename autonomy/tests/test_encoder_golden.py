@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from rushwick_onboard import FEATURE_VERSION, encode_observation, feature_size
+from rushwick_autonomy import FEATURE_VERSION, encode_observation, feature_size
 
 
 def test_golden_file_matches_this_encoder_version(golden):

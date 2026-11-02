@@ -1,4 +1,4 @@
-"""Reference car program for Rushwick.
+"""Rushwick Autonomy: the reference car program (driving stack) for Rushwick.
 
 The same program drives the simulator over the bridge (software-in-the-loop)
 and, with a real hardware backend, the car itself. Only the hardware backend
