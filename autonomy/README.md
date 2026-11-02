@@ -28,9 +28,10 @@ autonomy/
 | :--- | :--- |
 | `cli.py`, `app.py` | Command line (hardware backend, listen address, policy, speed cap, lidar stop, board config, `--actuate`) and the wiring that runs it |
 | `events.py`, `stats.py`, `report.py` | HIL event log (`--log`: frame and policy timings, watchdog, the Git commit), 1 Hz system stats from `vcgencmd` or `tegrastats`, and `python -m rushwick_autonomy.report board.jsonl --bridge hil.jsonl` |
+| `driver.py`, `loop.py` | One safe command per frame: the policy or the phone proposes, safety decides, outputs, log and telemetry record; the loop handles the bridge messages and the watchdog |
+| `teleop.py`, `teleop_server.py`, `teleop_page.html`, `telemetry.py` | `--teleop`: manual driving from a phone (page and WebSocket on port 8080, token, one controller, deadman, 250 ms watchdog, modes) and telemetry publish/subscribe ([`docs/connectivity.md`](docs/connectivity.md)) |
 | `outputs.py`, `heartbeat.py` | With `--actuate`: every safe command mirrored to the servo and ESC, and a 20 Hz GPIO heartbeat for the hardware watchdog |
 | `hardware.py` | `Hardware` protocol; `SimHardware` is the WebSocket server Rushwick connects to; `RealHardware` is a stub until Phase C |
-| `loop.py` | Runs the policy on control-tick frames and resends the last command otherwise; the frame `stamp` is the clock in lockstep, a 200 ms wall-clock watchdog brakes in realtime |
 | `policy.py` | `EchoPolicy` (returns the frame's teacher action, for the SIL echo check) and `OnnxPolicy` (a trained model) |
 | `onnx_session.py`, `bench.py` | ONNX sessions on the board config's execution providers (TensorRT → CUDA → CPU on the Jetson, with a TensorRT engine cache next to the model), and `python -m rushwick_autonomy.bench --model detector.onnx --config <board>.json` to time a perception model at the camera rate |
 | `lane_keeper.py` | `SimpleLaneKeeper`, a pure-pursuit smoke-test policy |

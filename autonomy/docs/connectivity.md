@@ -83,7 +83,8 @@ car program: teleop source ──▶ safety layer ──▶ SIL: command to Rush
                                             └─▶ car: PCA9685 → RC multiplexer → servo, ESC
 ```
 
-- **The page** is a single HTML file with inline JavaScript: an on-screen two-axis joystick (Pointer Events), a deadman button, a speed limit slider, and live round trip and telemetry. No app and no build step.
+- **The page** is a single HTML file with inline JavaScript: an on-screen two-axis joystick (Pointer Events) that is also the deadman, a speed scale slider, mode buttons (Autonomous, Teleop, Stop), and the live mode, speed and round trip. No app and no build step.
+- **Start it** with `rushwick-autonomy --teleop` (port 8080 by default). The car program prints the page address with a random token; `--teleop-token` sets a fixed one and `--teleop-max-speed` the speed cap (default 1.0 m/s).
 - **Serving it:** the car program serves the page from the same `websockets` server through its `process_request` hook, so no new dependency is needed.
 - **Python side:** `asyncio` sets `TCP_NODELAY` on every TCP connection, so small messages leave immediately.
 
@@ -105,9 +106,9 @@ car program: teleop source ──▶ safety layer ──▶ SIL: command to Rush
 
 ### 5.3 Rules that keep teleop safe
 
-1. **Deadman:** the car moves only while a finger holds the deadman button; releasing it brakes fully.
+1. **Deadman:** the car moves only while a finger is on the joystick; lifting it brakes fully.
 2. **Watchdog:** 250 ms without a valid message brakes fully, the same value as the bridge.
-3. **One controller:** the first phone with the right token gets control; later connections only receive telemetry. Control is released on disconnect.
+3. **One controller:** the first phone with the right token gets control; later connections only receive telemetry. Control is released on disconnect, and the car stays stopped (it never falls back to the policy on its own) until a phone switches modes.
 4. **Modes:** `autonomous` (the policy drives), `teleop` (the phone drives) and `stopped`.
    - Switching between `autonomous` and `teleop` happens only while the car is stopped.
    - `stopped` is always one tap away.
@@ -133,9 +134,10 @@ In SIL the car program forwards teleop commands to Rushwick instead of the polic
 
 | Topic | Content | Rate |
 | :--- | :--- | :--- |
-| `state` | Mode, speed, steering, the last command, safety interventions, watchdog state | 10 Hz |
-| `system` | Temperatures, clocks and throttling, CPU and GPU load, board name, power mode | 1 Hz |
-| `hil` | Rolling round trip and inference percentiles | 1 Hz |
+| `state` | Mode, speed, the last command (acceleration, steering), watchdog state, whether a phone has control, safety interventions | 10 Hz |
+| `system` | Temperatures, clocks and throttling, CPU and GPU load and power, from the board's stats backend (with `--config` and `--log`) | 1 Hz |
+
+Latency percentiles are not streamed: they come from the HIL logs (`python -m rushwick_autonomy.report`).
 
 Clients subscribe with `{ "type": "subscribe", "topics": ["state", "system"] }`. A slow client skips samples rather than building a queue.
 

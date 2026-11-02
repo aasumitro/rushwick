@@ -2,6 +2,7 @@ import asyncio
 import json
 
 from rushwick_autonomy import Safety, SafetyConfig
+from rushwick_autonomy.driver import Driver
 from rushwick_autonomy.events import EventLog
 from rushwick_autonomy.loop import run
 from rushwick_autonomy.report import board_summary, bridge_summary, percentiles
@@ -32,7 +33,7 @@ def test_the_loop_logs_frames_with_policy_and_handling_times(tmp_path):
     path = tmp_path / "board.jsonl"
     events = EventLog(str(path))
     hw = FakeHardware([HELLO, frame(0, True), frame(1, False)])
-    asyncio.run(run(hw, lambda hello: CountingPolicy(), Safety(SafetyConfig()), log=lambda s: None, max_messages=3, events=events))
+    asyncio.run(run(hw, lambda hello: CountingPolicy(), Driver(Safety(SafetyConfig()), events=events), log=lambda s: None, max_messages=3))
     events.close()
     lines = [json.loads(line) for line in path.read_text().splitlines()]
     assert [e["kind"] for e in lines] == ["hello", "frame", "frame"]

@@ -4,11 +4,13 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-from typing import Optional
+import secrets
+from typing import Any, List, Optional
 
 from .actuation import open_actuation
 from .config import BoardConfig
 from .config_file import load_config
+from .driver import Driver
 from .events import EventLog, git_commit
 from .hardware import RealHardware, SimHardware
 from .heartbeat import keep_beating, open_heartbeat
@@ -18,6 +20,9 @@ from .outputs import ActuatedOutputs
 from .policy import EchoPolicy, OnnxPolicy
 from .safety import Safety, SafetyConfig
 from .stats import record_stats
+from .telemetry import TelemetryHub
+from .teleop import Teleop, TeleopConfig
+from .teleop_server import serve_teleop
 
 
 def policy_factory(spec: str, cfg: Optional[BoardConfig] = None) -> PolicyFactory:
@@ -36,29 +41,35 @@ def log(line: str) -> None:
 
 async def main(args: argparse.Namespace) -> None:
     cfg = load_config(args.config) if args.config else None
-    make_policy = policy_factory(args.policy, cfg)
     host, port = args.listen.rsplit(":", 1)
     hw = SimHardware(host, int(port)) if args.hardware == "sim" else RealHardware()
     await hw.start()
     lidar_stop = args.hardware == "real" if args.lidar_stop is None else args.lidar_stop
-    safety = Safety(SafetyConfig(max_speed=args.max_speed, lidar_stop=lidar_stop))
     events = EventLog(args.log)
     commit = git_commit()
     events.write("start", commit=commit, board=cfg.board if cfg else None, policy=args.policy, actuate=args.actuate)
-    sink, tasks = None, []
+    driver = Driver(Safety(SafetyConfig(max_speed=args.max_speed, lidar_stop=lidar_stop)), events=events)
+    tasks: List[Any] = []
     if cfg is not None and args.actuate:
-        sink = ActuatedOutputs(open_actuation(cfg))
+        driver.sink = ActuatedOutputs(open_actuation(cfg))
         tasks.append(asyncio.ensure_future(keep_beating(open_heartbeat(cfg.heartbeat))))
         log(f"actuating on {cfg.board}: steering ch{cfg.steering.channel}, throttle ch{cfg.throttle.channel}")
+    if args.teleop:
+        token = args.teleop_token or secrets.token_urlsafe(8)
+        driver.teleop, driver.hub = Teleop(TeleopConfig(max_speed=args.teleop_max_speed)), TelemetryHub()
+        teleop_host, teleop_port = args.teleop.rsplit(":", 1)
+        await serve_teleop(driver.teleop, driver.hub, teleop_host, int(teleop_port), token)
+        tasks.append(asyncio.ensure_future(driver.hub.pump()))
+        log(f"teleop: http://<this host>:{teleop_port}/?token={token}")
     if cfg is not None and args.log:
-        tasks.append(asyncio.ensure_future(record_stats(cfg.stats, events)))
+        tasks.append(asyncio.ensure_future(record_stats(cfg.stats, events, driver.hub)))
     log(f"rushwick-autonomy {commit or 'outside git'}: listening on ws://{host}:{port} with policy {args.policy} (lidar stop {'on' if lidar_stop else 'off'})")
     try:
-        await run(hw, make_policy, safety, log=log, sink=sink, events=events)
+        await run(hw, policy_factory(args.policy, cfg), driver, log=log)
     finally:
         # Neutral first; then the heartbeat stops and the hardware watchdog switches the outputs off.
-        if sink is not None:
-            sink.close()
+        if driver.sink is not None:
+            driver.sink.close()
         for task in tasks:
             task.cancel()
         events.close()

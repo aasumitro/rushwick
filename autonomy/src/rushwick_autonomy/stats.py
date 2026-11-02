@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import re
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 from .events import EventLog
+from .telemetry import TelemetryHub
 
 
 def parse_vcgencmd(temp: str, throttled: str, clock: str) -> Dict[str, Any]:
@@ -45,17 +46,23 @@ async def _run(*cmd: str) -> str:
     return out.decode().strip()
 
 
-async def record_stats(backend: str, events: EventLog, period: float = 1.0) -> None:
-    """Run as a task next to the loop; writes one `stats` event per period. Backend `none` does nothing."""
+async def record_stats(backend: str, events: EventLog, hub: Optional[TelemetryHub] = None, period: float = 1.0) -> None:
+    """Run as a task next to the loop: one `stats` event (and `system` telemetry) per period. Backend `none` does nothing."""
+
+    def record(sample: Dict[str, Any]) -> None:
+        events.write("stats", **sample)
+        if hub is not None:
+            hub.publish("system", sample)
+
     if backend == "vcgencmd":
         while True:
             sample = await asyncio.gather(_run("vcgencmd", "measure_temp"), _run("vcgencmd", "get_throttled"), _run("vcgencmd", "measure_clock", "arm"))
-            events.write("stats", **parse_vcgencmd(*sample))
+            record(parse_vcgencmd(*sample))
             await asyncio.sleep(period)
     elif backend == "tegrastats":
         proc = await asyncio.create_subprocess_exec("tegrastats", "--interval", str(int(period * 1000)), stdout=asyncio.subprocess.PIPE)
         try:
             async for line in proc.stdout:  # type: ignore[union-attr]
-                events.write("stats", **parse_tegrastats(line.decode()))
+                record(parse_tegrastats(line.decode()))
         finally:
             proc.terminate()

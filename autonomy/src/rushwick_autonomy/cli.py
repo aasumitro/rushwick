@@ -30,6 +30,9 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     p.add_argument("--actuate", action="store_true", help="also drive the servo and ESC through the PCA9685 (bench, wheels off the ground)")
     p.add_argument("--i-have-a-kill-switch", action="store_true", help="confirm the bench checklist; required with --actuate")
     p.add_argument("--log", help="HIL event log (JSON lines): frame timings, watchdog, and system stats when --config names a stats backend")
+    p.add_argument("--teleop", nargs="?", const="0.0.0.0:8080", metavar="HOST:PORT", help="serve the phone teleop page and telemetry (default 0.0.0.0:8080)")
+    p.add_argument("--teleop-token", help="token the phone must send (default: a random one, printed at start)")
+    p.add_argument("--teleop-max-speed", type=float, default=1.0, help="teleop speed cap in m/s, real units (default 1.0)")
     args = p.parse_args(argv)
     if args.actuate and not args.config:
         p.error("--actuate needs --config autonomy/configs/<board>.json")

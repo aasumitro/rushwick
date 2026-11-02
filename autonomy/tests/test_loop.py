@@ -1,6 +1,7 @@
 import asyncio
 
 from rushwick_autonomy import Command, Safety, SafetyConfig
+from rushwick_autonomy.driver import Driver
 from rushwick_autonomy.loop import run
 from rushwick_autonomy.safety import FULL_BRAKE
 
@@ -9,7 +10,7 @@ OBS = {"ego": {"speed": 0.5, "length": 0.45}, "route": {"speedLimit": 1.4}, "lid
 
 
 def frame(seq, tick):
-    return {"type": "frame", "seq": seq, "stamp": seq / 30, "controlTick": tick, "observation": OBS}
+    return {"type": "frame", "seq": seq, "stamp": seq / 30, "controlTick": tick, "observation": OBS, "odom": {"twist": {"linear": {"x": 0.5}}}}
 
 
 class FakeHardware:
@@ -44,7 +45,7 @@ def drive(inbox, timeouts=0):
     """Run the loop over `inbox`, then `timeouts` reads that find no frame."""
     hw = FakeHardware(inbox)
     policy = CountingPolicy()
-    asyncio.run(run(hw, lambda hello: policy, Safety(SafetyConfig()), log=lambda s: None, max_messages=len(inbox) + timeouts))
+    asyncio.run(run(hw, lambda hello: policy, Driver(Safety(SafetyConfig())), log=lambda s: None, max_messages=len(inbox) + timeouts))
     return hw.sent, policy
 
 
@@ -80,5 +81,5 @@ class RecordingSink:
 def test_every_command_and_the_watchdog_brake_reach_the_sink():
     sink = RecordingSink()
     hw = FakeHardware([dict(HELLO, mode="realtime"), frame(0, True)])
-    asyncio.run(run(hw, lambda hello: CountingPolicy(), Safety(SafetyConfig()), log=lambda s: None, max_messages=3, sink=sink))
+    asyncio.run(run(hw, lambda hello: CountingPolicy(), Driver(Safety(SafetyConfig()), sink=sink), log=lambda s: None, max_messages=3))
     assert sink.got == [(Command(0.1, 1.0), False), (Command(FULL_BRAKE, 0.0), True)]
