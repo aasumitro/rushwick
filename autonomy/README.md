@@ -18,6 +18,7 @@ autonomy/
   src/rushwick_autonomy/  the package (src layout)
   tests/                  pytest suite and the encoder golden vectors (tests/golden/)
   docs/hardware/          prototype hardware: Raspberry Pi 5 (pi.md) or Jetson Orin Nano (jetson.md)
+  docs/connectivity.md    network, remote access (SSH, rsync), phone teleop and telemetry design
 ```
 
 | Module | Role |
