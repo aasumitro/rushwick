@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Protocol
+from typing import Any, Dict, Optional, Protocol, Sequence
 
 import numpy as np
 
 from .encoder import FEATURE_VERSION, encode_observation
+from .onnx_session import open_session
 from .safety import Command
 from .units import observation_to_sim
 
@@ -44,12 +45,10 @@ class OnnxPolicy:
         self.sensors = hello["sensors"]
 
     @classmethod
-    def load(cls, path: str, hello: Dict[str, Any]) -> "OnnxPolicy":
-        try:
-            import onnxruntime as ort
-        except ImportError as e:
-            raise RuntimeError("OnnxPolicy needs onnxruntime: pip install -e 'autonomy[onnx]'") from e
-        return cls(ort.InferenceSession(path), hello)
+    def load(cls, path: str, hello: Dict[str, Any], providers: Optional[Sequence[str]] = None) -> "OnnxPolicy":
+        """`providers` comes from the board config (TensorRT, CUDA, CPU on the Jetson; CPU on the Pi)."""
+        session, _ = open_session(path, providers)
+        return cls(session, hello)
 
     def reset(self) -> None:
         pass
