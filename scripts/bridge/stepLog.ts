@@ -6,6 +6,8 @@ import type { DrivingAction } from '../../src/sim';
 export interface StepRecord {
   seq: number;
   stamp: number;
+  /** The frame was a control tick: the platform accepted its command. */
+  controlTick: boolean;
   /** Frame sent → its command received (ms); null when it did not arrive in time. */
   rttMs: number | null;
   /** The command applied this step (real units); null while braking for the watchdog. */
@@ -33,9 +35,9 @@ export class StepLog {
     this.out = path ? createWriteStream(path) : null;
   }
 
-  add(r: StepRecord, controlTick: boolean): void {
+  add(r: StepRecord): void {
     if (r.rttMs !== null) this.rtts.push(r.rttMs);
-    if (controlTick) this.ticks++;
+    if (r.controlTick) this.ticks++;
     if (r.deadlineMiss) this.misses++;
     if (r.watchdog && !this.braking) this.trips++;
     this.braking = r.watchdog;

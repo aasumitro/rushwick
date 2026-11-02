@@ -7,6 +7,7 @@ import asyncio
 
 from .actuation import open_actuation
 from .config_file import load_config
+from .events import EventLog, git_commit
 from .hardware import RealHardware, SimHardware
 from .heartbeat import keep_beating, open_heartbeat
 from .lane_keeper import SimpleLaneKeeper
@@ -14,6 +15,7 @@ from .loop import PolicyFactory, run
 from .outputs import ActuatedOutputs
 from .policy import EchoPolicy, OnnxPolicy
 from .safety import Safety, SafetyConfig
+from .stats import record_stats
 
 
 def policy_factory(spec: str) -> PolicyFactory:
@@ -37,18 +39,24 @@ async def main(args: argparse.Namespace) -> None:
     await hw.start()
     lidar_stop = args.hardware == "real" if args.lidar_stop is None else args.lidar_stop
     safety = Safety(SafetyConfig(max_speed=args.max_speed, lidar_stop=lidar_stop))
-    sink = beating = None
-    if args.actuate:
-        cfg = load_config(args.config)
+    cfg = load_config(args.config) if args.config else None
+    events = EventLog(args.log)
+    commit = git_commit()
+    events.write("start", commit=commit, board=cfg.board if cfg else None, policy=args.policy, actuate=args.actuate)
+    sink, tasks = None, []
+    if cfg is not None and args.actuate:
         sink = ActuatedOutputs(open_actuation(cfg))
-        beating = asyncio.ensure_future(keep_beating(open_heartbeat(cfg.heartbeat)))
+        tasks.append(asyncio.ensure_future(keep_beating(open_heartbeat(cfg.heartbeat))))
         log(f"actuating on {cfg.board}: steering ch{cfg.steering.channel}, throttle ch{cfg.throttle.channel}")
-    log(f"rushwick-autonomy: listening on ws://{host}:{port} with policy {args.policy} (lidar stop {'on' if lidar_stop else 'off'})")
+    if cfg is not None and args.log:
+        tasks.append(asyncio.ensure_future(record_stats(cfg.stats, events)))
+    log(f"rushwick-autonomy {commit or 'outside git'}: listening on ws://{host}:{port} with policy {args.policy} (lidar stop {'on' if lidar_stop else 'off'})")
     try:
-        await run(hw, make_policy, safety, log=log, sink=sink)
+        await run(hw, make_policy, safety, log=log, sink=sink, events=events)
     finally:
         # Neutral first; then the heartbeat stops and the hardware watchdog switches the outputs off.
         if sink is not None:
             sink.close()
-        if beating is not None:
-            beating.cancel()
+        for task in tasks:
+            task.cancel()
+        events.close()

@@ -224,10 +224,11 @@ npm run sim:bridge -- --url ws://localhost:8765 --mode lockstep --profile rc-pi 
 | `--mode lockstep\|realtime` | `lockstep` | Clock mode, see below |
 | `--profile NAME` | `ideal` | Platform profile |
 | `--episodes N` | `1` | Number of episodes to run |
+| `--minutes N` | none | Instead of `--episodes`: keep starting episodes for N minutes of wall time (long HIL runs) |
 | `--seed N` | `1` | City and traffic seed |
 | `--side left\|right` | `left` | Driving side |
 | `--teacher` | off | Add the privileged rule-based teacher's action to every frame |
-| `--log FILE` | none | One JSON line per step: `seq`, `stamp`, `rttMs`, `command`, `deadlineMiss`, `watchdog` |
+| `--log FILE` | none | One JSON line per step: `seq`, `stamp`, `controlTick`, `rttMs`, `command`, `deadlineMiss`, `watchdog` |
 | `--timeout-ms N` | `5000` | Lockstep: abort when a command takes longer |
 
 - **`lockstep`:** Rushwick sends frame `k`, waits for the command with `seq` `k`, applies it and steps. Faster than real time, and deterministic when the car program is deterministic and uses `stamp` as its clock.

@@ -29,6 +29,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     p.add_argument("--config", help="board config, autonomy/configs/<board>.json (needed for --actuate)")
     p.add_argument("--actuate", action="store_true", help="also drive the servo and ESC through the PCA9685 (bench, wheels off the ground)")
     p.add_argument("--i-have-a-kill-switch", action="store_true", help="confirm the bench checklist; required with --actuate")
+    p.add_argument("--log", help="HIL event log (JSON lines): frame timings, watchdog, and system stats when --config names a stats backend")
     args = p.parse_args(argv)
     if args.actuate and not args.config:
         p.error("--actuate needs --config autonomy/configs/<board>.json")

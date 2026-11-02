@@ -6,6 +6,8 @@ export interface BridgeArgs {
   mode: ClockMode;
   profile: string;
   episodes: number;
+  /** Keep starting episodes until this many minutes of wall time have passed (replaces `episodes`). */
+  minutes: number | null;
   seed: number;
   side: 'left' | 'right';
   teacher: boolean;
@@ -19,6 +21,7 @@ const USAGE = `Usage: npm run sim:bridge -- [options]
                             realtime steps at wall-clock pace and measures latency (default lockstep)
   --profile NAME            platform profile: ideal, rc-pi, passenger-car (default ideal)
   --episodes N              episodes to run (default 1)
+  --minutes N               instead of --episodes: keep starting episodes for N minutes (long HIL runs)
   --seed N                  city/traffic seed (default 1)
   --side left|right         driving side (default left)
   --teacher                 send the privileged rule-based teacher's action with every frame
@@ -33,6 +36,7 @@ export function readArgs(argv: string[]): BridgeArgs {
       mode: { type: 'string', default: 'lockstep' },
       profile: { type: 'string', default: 'ideal' },
       episodes: { type: 'string', default: '1' },
+      minutes: { type: 'string' },
       seed: { type: 'string', default: '1' },
       side: { type: 'string', default: 'left' },
       teacher: { type: 'boolean', default: false },
@@ -54,6 +58,7 @@ export function readArgs(argv: string[]): BridgeArgs {
     mode: values.mode,
     profile: values.profile,
     episodes: Number(values.episodes),
+    minutes: values.minutes === undefined ? null : Number(values.minutes),
     seed: Number(values.seed),
     side: values.side === 'right' ? 'right' : 'left',
     teacher: values.teacher,
