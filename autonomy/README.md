@@ -20,7 +20,7 @@ autonomy/
   src/rushwick_autonomy/  the package (src layout)
   configs/                one config per board: pi.json, jetson.json, laptop.json (fake hardware for dry runs)
   tests/                  pytest suite and the encoder golden vectors (tests/golden/)
-  docs/hardware/          prototype hardware: Raspberry Pi 5 (pi.md) or Jetson Orin Nano (jetson.md)
+  docs/hardware/          prototype hardware: Raspberry Pi 5 (pi.md), Jetson Orin Nano (jetson.md), comparison.md
   docs/connectivity.md    network, remote access (SSH, rsync), phone teleop and telemetry design
   docs/hil.md             hardware-in-the-loop procedure: board setup, bench checklist, calibration
 ```

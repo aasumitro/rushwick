@@ -357,7 +357,7 @@ The procedure, with every command, is in [`hil.md`](../hil.md).
 
 ## 12. Open decisions
 
-- Compute board: Raspberry Pi 5 (this document) or Jetson Orin Nano ([`jetson.md`](jetson.md)).
+- Which board drives the first track runs. Both builds go ahead in parallel; [`comparison.md`](comparison.md) recommends this one until the measurements say otherwise.
 - Motor type: sensored brushless or brushed.
 - Localization: option A (overhead camera) or B (AprilTags around the track). Q3 suggests starting with A.
 - Room size (Q4): it fixes the final track preset and the overhead camera's height and lens.
