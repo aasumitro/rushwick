@@ -32,6 +32,7 @@ autonomy/
 | `hardware.py` | `Hardware` protocol; `SimHardware` is the WebSocket server Rushwick connects to; `RealHardware` is a stub until Phase C |
 | `loop.py` | Runs the policy on control-tick frames and resends the last command otherwise; the frame `stamp` is the clock in lockstep, a 200 ms wall-clock watchdog brakes in realtime |
 | `policy.py` | `EchoPolicy` (returns the frame's teacher action, for the SIL echo check) and `OnnxPolicy` (a trained model) |
+| `onnx_session.py`, `bench.py` | ONNX sessions on the board config's execution providers (TensorRT → CUDA → CPU on the Jetson, with a TensorRT engine cache next to the model), and `python -m rushwick_autonomy.bench --model detector.onnx --config <board>.json` to time a perception model at the camera rate |
 | `lane_keeper.py` | `SimpleLaneKeeper`, a pure-pursuit smoke-test policy |
 | `safety.py` | Always between the policy and the hardware: steering clamp, speed cap, lidar stop, watchdog brake |
 | `encoder.py`, `units.py` | Ports of `encodeObservation()` and the bridge's real ↔ sim units |

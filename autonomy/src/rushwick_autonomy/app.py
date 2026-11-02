@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+from typing import Optional
 
 from .actuation import open_actuation
+from .config import BoardConfig
 from .config_file import load_config
 from .events import EventLog, git_commit
 from .hardware import RealHardware, SimHardware
@@ -18,13 +20,13 @@ from .safety import Safety, SafetyConfig
 from .stats import record_stats
 
 
-def policy_factory(spec: str) -> PolicyFactory:
+def policy_factory(spec: str, cfg: Optional[BoardConfig] = None) -> PolicyFactory:
     if spec == "echo":
         return lambda hello: EchoPolicy()
     if spec == "simple":
         return lambda hello: SimpleLaneKeeper()
     if spec.startswith("onnx:"):
-        return lambda hello: OnnxPolicy.load(spec[len("onnx:"):], hello)
+        return lambda hello: OnnxPolicy.load(spec[len("onnx:"):], hello, cfg.onnx_providers if cfg else None)
     raise SystemExit(f"unknown policy '{spec}': use echo, simple or onnx:<path>")
 
 
@@ -33,13 +35,13 @@ def log(line: str) -> None:
 
 
 async def main(args: argparse.Namespace) -> None:
-    make_policy = policy_factory(args.policy)
+    cfg = load_config(args.config) if args.config else None
+    make_policy = policy_factory(args.policy, cfg)
     host, port = args.listen.rsplit(":", 1)
     hw = SimHardware(host, int(port)) if args.hardware == "sim" else RealHardware()
     await hw.start()
     lidar_stop = args.hardware == "real" if args.lidar_stop is None else args.lidar_stop
     safety = Safety(SafetyConfig(max_speed=args.max_speed, lidar_stop=lidar_stop))
-    cfg = load_config(args.config) if args.config else None
     events = EventLog(args.log)
     commit = git_commit()
     events.write("start", commit=commit, board=cfg.board if cfg else None, policy=args.policy, actuate=args.actuate)
