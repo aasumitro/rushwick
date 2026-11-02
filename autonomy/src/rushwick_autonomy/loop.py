@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Callable, Dict, Optional
+from collections.abc import Callable
+from typing import Any
 
 from .driver import Driver
 from .encoder import FEATURE_VERSION
@@ -12,13 +13,13 @@ from .policy import Policy
 
 PROTOCOL_VERSION = 1
 
-PolicyFactory = Callable[[Dict[str, Any]], Policy]
+PolicyFactory = Callable[[dict[str, Any]], Policy]
 
 
-async def run(hw: Hardware, make_policy: PolicyFactory, driver: Driver, log: Callable[[str], None] = print, max_messages: Optional[int] = None) -> None:
+async def run(hw: Hardware, make_policy: PolicyFactory, driver: Driver, log: Callable[[str], None] = print, max_messages: int | None = None) -> None:
     """Serve forever (or `max_messages`, for tests). In lockstep the frame `stamp` is the only
     clock; in realtime a wall-clock watchdog brakes when frames stop arriving."""
-    hello: Optional[Dict[str, Any]] = None
+    hello: dict[str, Any] | None = None
     last_seq = -1
     handled = 0
     braking = False

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List
 
 @dataclass(frozen=True)
 class I2cConfig:
@@ -53,4 +52,4 @@ class BoardConfig:
     throttle: ThrottleConfig
     heartbeat: HeartbeatConfig
     stats: str
-    onnx_providers: List[str]
+    onnx_providers: list[str]

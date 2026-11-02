@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import secrets
-from typing import Any, List, Optional
+from typing import Any
 
 from .actuation import open_actuation
 from .config import BoardConfig
@@ -25,7 +25,7 @@ from .teleop import Teleop, TeleopConfig
 from .teleop_server import serve_teleop
 
 
-def policy_factory(spec: str, cfg: Optional[BoardConfig] = None) -> PolicyFactory:
+def policy_factory(spec: str, cfg: BoardConfig | None = None) -> PolicyFactory:
     if spec == "echo":
         return lambda hello: EchoPolicy()
     if spec == "simple":
@@ -49,20 +49,20 @@ async def main(args: argparse.Namespace) -> None:
     commit = git_commit()
     events.write("start", commit=commit, board=cfg.board if cfg else None, policy=args.policy, actuate=args.actuate)
     driver = Driver(Safety(SafetyConfig(max_speed=args.max_speed, lidar_stop=lidar_stop)), events=events)
-    tasks: List[Any] = []
+    tasks: list[Any] = []
     if cfg is not None and args.actuate:
         driver.sink = ActuatedOutputs(open_actuation(cfg))
-        tasks.append(asyncio.ensure_future(keep_beating(open_heartbeat(cfg.heartbeat))))
+        tasks.append(asyncio.create_task(keep_beating(open_heartbeat(cfg.heartbeat))))
         log(f"actuating on {cfg.board}: steering ch{cfg.steering.channel}, throttle ch{cfg.throttle.channel}")
     if args.teleop:
         token = args.teleop_token or secrets.token_urlsafe(8)
         driver.teleop, driver.hub = Teleop(TeleopConfig(max_speed=args.teleop_max_speed)), TelemetryHub()
         teleop_host, teleop_port = args.teleop.rsplit(":", 1)
         await serve_teleop(driver.teleop, driver.hub, teleop_host, int(teleop_port), token)
-        tasks.append(asyncio.ensure_future(driver.hub.pump()))
+        tasks.append(asyncio.create_task(driver.hub.pump()))
         log(f"teleop: http://<this host>:{teleop_port}/?token={token}")
     if cfg is not None and args.log:
-        tasks.append(asyncio.ensure_future(record_stats(cfg.stats, events, driver.hub)))
+        tasks.append(asyncio.create_task(record_stats(cfg.stats, events, driver.hub)))
     log(f"rushwick-autonomy {commit or 'outside git'}: listening on ws://{host}:{port} with policy {args.policy} (lidar stop {'on' if lidar_stop else 'off'})")
     try:
         await run(hw, policy_factory(args.policy, cfg), driver, log=log)

@@ -3,8 +3,9 @@ refuse to create a session without them; the order says which provider runs a no
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any
 
 
 def import_onnxruntime() -> Any:
@@ -15,18 +16,18 @@ def import_onnxruntime() -> Any:
     return onnxruntime
 
 
-def choose_providers(wanted: Optional[Sequence[str]], available: Sequence[str]) -> List[str]:
+def choose_providers(wanted: Sequence[str] | None, available: Sequence[str]) -> list[str]:
     """The wanted providers this build has, in the wanted order; every available one when nothing is wanted."""
     if not wanted:
         return list(available)
     return [p for p in wanted if p in available] or ["CPUExecutionProvider"]
 
 
-def open_session(path: str, providers: Optional[Sequence[str]] = None) -> Tuple[Any, List[str]]:
+def open_session(path: str, providers: Sequence[str] | None = None) -> tuple[Any, list[str]]:
     """A session on the best configured providers. TensorRT engines are cached next to the model, so only the first start compiles."""
     ort = import_onnxruntime()
     chosen = choose_providers(providers, ort.get_available_providers())
-    options: List[Any] = []
+    options: list[Any] = []
     for p in chosen:
         if p == "TensorrtExecutionProvider":
             cache = Path(f"{path}.trt-cache")

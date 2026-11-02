@@ -129,7 +129,11 @@ No formatter or linter is configured, so match the surrounding code.
 
 ### Python (`autonomy/`)
 
-- Python 3.9+ (the Raspberry Pi runs 3.11): `from __future__ import annotations`, type hints, `typing` instead of `X | Y` at runtime.
+- Python 3.9+ (the Raspberry Pi runs 3.11): type hints, with `from __future__ import annotations` in every module that has them.
+  - Use builtin generics (`list[str]`, `dict[str, Any]`) and `collections.abc` (`Callable`, `Sequence`), never the deprecated `typing` aliases (`List`, `Dict`, `Tuple`, `Callable` and the like).
+  - Write `X | None` in annotations. Runtime expressions, such as type aliases, still run on 3.9, which cannot evaluate `X | Y`: use `Optional` or `Union` there.
+  - Use `asyncio.create_task`, not `ensure_future`. Do not catch `asyncio.TimeoutError`: its class differs before 3.11.
+  - `tests/test_modern_python.py` checks these rules.
 - 4-space indent, double quotes, snake_case modules. Files stay under 100 lines, like the TypeScript code.
 - Mirror the TypeScript contracts exactly: `encoder.py` follows `encoder.ts` (golden vectors), `units.py` follows `src/bridge/units.ts`, `loop.py` speaks bridge protocol v1.
 - Policies never command the hardware directly; everything goes through `safety.py`.

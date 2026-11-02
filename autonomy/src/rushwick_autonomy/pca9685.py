@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import time
-from typing import Callable, List, Protocol, Tuple
+from collections.abc import Callable
+from typing import Protocol
 
 MODE1, PRESCALE, LED0_ON_L = 0x00, 0xFE, 0x06
 RESTART, AUTO_INCREMENT, SLEEP = 0x80, 0x20, 0x10
@@ -16,7 +17,7 @@ class I2cBus(Protocol):
 
     def write_byte_data(self, address: int, register: int, value: int) -> None: ...
 
-    def write_i2c_block_data(self, address: int, register: int, data: List[int]) -> None: ...
+    def write_i2c_block_data(self, address: int, register: int, data: list[int]) -> None: ...
 
 
 class FakeI2c:
@@ -24,7 +25,7 @@ class FakeI2c:
 
     def __init__(self) -> None:
         self.registers = {MODE1: 0x11}
-        self.writes: List[Tuple[int, List[int]]] = []
+        self.writes: list[tuple[int, list[int]]] = []
 
     def read_byte_data(self, address: int, register: int) -> int:
         return self.registers.get(register, 0)
@@ -33,7 +34,7 @@ class FakeI2c:
         self.registers[register] = value
         self.writes.append((register, [value]))
 
-    def write_i2c_block_data(self, address: int, register: int, data: List[int]) -> None:
+    def write_i2c_block_data(self, address: int, register: int, data: list[int]) -> None:
         self.writes.append((register, list(data)))
 
 

@@ -7,9 +7,10 @@ light states and normalized steering never change.
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Iterable
+from collections.abc import Callable, Iterable
+from typing import Any
 
-Observation = Dict[str, Any]
+Observation = dict[str, Any]
 Convert = Callable[[float], float]
 
 _EGO = ("x", "y", "speed", "accel", "length", "width", "wheelBase")
@@ -18,7 +19,7 @@ _WAYPOINT = ("x", "y", "speedLimit")
 _AGENT = ("x", "y", "speed", "vx", "vy", "length", "width")
 
 
-def _scaled(d: Dict[str, Any], keys: Iterable[str], f: Convert) -> Dict[str, Any]:
+def _scaled(d: dict[str, Any], keys: Iterable[str], f: Convert) -> dict[str, Any]:
     out = dict(d)
     for k in keys:
         out[k] = f(d[k])

@@ -8,8 +8,9 @@ from __future__ import annotations
 
 import math
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional
+from typing import Any
 
 from .safety import FULL_BRAKE, Command
 
@@ -27,7 +28,7 @@ class TeleopConfig:
     timeout: float = 0.25
 
 
-def parse_teleop(msg: Dict[str, Any]) -> Dict[str, Any]:
+def parse_teleop(msg: dict[str, Any]) -> dict[str, Any]:
     """Check one teleop message; raises ValueError with the reason."""
     seq = msg.get("seq")
     if not isinstance(seq, int) or seq < 0:
@@ -45,10 +46,10 @@ class Teleop:
     def __init__(self, cfg: TeleopConfig = TeleopConfig(), clock: Callable[[], float] = time.monotonic) -> None:
         self.cfg, self.clock = cfg, clock
         self.mode = "autonomous"
-        self.controller: Optional[str] = None
+        self.controller: str | None = None
         #: Latest speed from the frames (m/s, real units), for the standstill rule and the speed cap.
         self.speed = 0.0
-        self._latest: Optional[Dict[str, Any]] = None
+        self._latest: dict[str, Any] | None = None
         self._at = 0.0
 
     def claim(self, client: str) -> bool:
@@ -61,13 +62,13 @@ class Teleop:
         if self.controller == client:
             self.controller, self._latest = None, None
 
-    def receive(self, client: str, msg: Dict[str, Any]) -> None:
+    def receive(self, client: str, msg: dict[str, Any]) -> None:
         """Keep the newest message of the controlling phone; older or foreign messages are dropped."""
         parse_teleop(msg)
         if client == self.controller and (self._latest is None or msg["seq"] > self._latest["seq"]):
             self._latest, self._at = msg, self.clock()
 
-    def request_mode(self, client: str, mode: str) -> Optional[str]:
+    def request_mode(self, client: str, mode: str) -> str | None:
         """Switch modes; returns the reason when refused. Stopping is always allowed, from any phone."""
         if mode not in MODES:
             return f"unknown mode {mode!r}"

@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import argparse
 import time
+from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Sequence
+from typing import Any
 
 import numpy as np
 
@@ -22,13 +23,13 @@ from .report import percentiles
 DTYPES = {"tensor(float)": np.float32, "tensor(float16)": np.float16, "tensor(uint8)": np.uint8}
 
 
-def input_shape(shape: Sequence[Any], size: int) -> List[int]:
+def input_shape(shape: Sequence[Any], size: int) -> list[int]:
     """Fill dynamic dimensions: batch 1, channels 3, height and width `size` (NCHW)."""
     fill = [1, 3, size, size]
     return [d if isinstance(d, int) and d > 0 else fill[min(i, 3)] for i, d in enumerate(shape)]
 
 
-def make_inputs(spec: Any, size: int, frames: Optional[str], count: int = 8) -> List[np.ndarray]:
+def make_inputs(spec: Any, size: int, frames: str | None, count: int = 8) -> list[np.ndarray]:
     dtype = DTYPES.get(spec.type, np.float32)
     if frames:
         return [np.load(p).astype(dtype) for p in sorted(Path(frames).glob("*.npy"))]
@@ -37,10 +38,10 @@ def make_inputs(spec: Any, size: int, frames: Optional[str], count: int = 8) -> 
     return [(rng.random(shape) * (255 if dtype == np.uint8 else 1)).astype(dtype) for _ in range(count)]
 
 
-def run_bench(session: Any, inputs: List[np.ndarray], rate: float, seconds: float, clock: Callable[[], float] = time.perf_counter, sleep: Callable[[float], None] = time.sleep) -> List[float]:
+def run_bench(session: Any, inputs: list[np.ndarray], rate: float, seconds: float, clock: Callable[[], float] = time.perf_counter, sleep: Callable[[float], None] = time.sleep) -> list[float]:
     """Latencies (ms) of one inference per period of `rate` Hz (back to back when rate is 0)."""
     name = session.get_inputs()[0].name
-    latencies: List[float] = []
+    latencies: list[float] = []
     start = clock()
     while clock() - start < seconds:
         t0 = clock()
@@ -51,7 +52,7 @@ def run_bench(session: Any, inputs: List[np.ndarray], rate: float, seconds: floa
     return latencies
 
 
-def main(argv: Optional[List[str]] = None) -> None:
+def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="python -m rushwick_autonomy.bench")
     p.add_argument("--model", required=True, help="ONNX detector")
     p.add_argument("--config", help="board config: its onnx_providers are used")

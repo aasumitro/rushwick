@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,7 +7,7 @@ name = "rushwick-autonomy"
 version = "0.1.0"
 description = "Rushwick Autonomy: the driving stack that runs on the vehicle, against the Rushwick simulator now and the real car later"
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
 requires-python = ">=3.9"
 dependencies = ["websockets>=13", "numpy>=1.24"]
 

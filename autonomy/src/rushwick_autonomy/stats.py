@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import asyncio
 import re
-from typing import Any, Dict, Optional
+from typing import Any
 
 from .events import EventLog
 from .telemetry import TelemetryHub
 
 
-def parse_vcgencmd(temp: str, throttled: str, clock: str) -> Dict[str, Any]:
+def parse_vcgencmd(temp: str, throttled: str, clock: str) -> dict[str, Any]:
     """Outputs of `measure_temp`, `get_throttled` and `measure_clock arm`. Throttle bits 0-3 mean now, 16-19 since boot."""
     bits = int(throttled.split("=")[1], 16)
     return {
@@ -21,13 +21,13 @@ def parse_vcgencmd(temp: str, throttled: str, clock: str) -> Dict[str, Any]:
     }
 
 
-def parse_tegrastats(line: str) -> Dict[str, Any]:
+def parse_tegrastats(line: str) -> dict[str, Any]:
     """One `tegrastats` line: sensor temperatures, CPU and GPU clocks (MHz) and loads, board input power."""
     cpu = re.search(r"CPU \[([^\]]*)\]", line)
     cpus = [(int(load), int(mhz)) for load, mhz in re.findall(r"(\d+)%@(\d+)", cpu.group(1))] if cpu else []
     gpu = re.search(r"GR3D_FREQ (\d+)%(?:@\[?(\d+)\]?)?", line)
     power = re.search(r"VDD_IN (\d+)mW", line)
-    out: Dict[str, Any] = {"temps_c": {name: float(c) for name, c in re.findall(r"(\w+)@(-?[\d.]+)C", line)}}
+    out: dict[str, Any] = {"temps_c": {name: float(c) for name, c in re.findall(r"(\w+)@(-?[\d.]+)C", line)}}
     if cpus:
         out["cpu_load"] = max(load for load, _ in cpus)
         out["cpu_mhz"] = min(mhz for _, mhz in cpus)
@@ -46,10 +46,10 @@ async def _run(*cmd: str) -> str:
     return out.decode().strip()
 
 
-async def record_stats(backend: str, events: EventLog, hub: Optional[TelemetryHub] = None, period: float = 1.0) -> None:
+async def record_stats(backend: str, events: EventLog, hub: TelemetryHub | None = None, period: float = 1.0) -> None:
     """Run as a task next to the loop: one `stats` event (and `system` telemetry) per period. Backend `none` does nothing."""
 
-    def record(sample: Dict[str, Any]) -> None:
+    def record(sample: dict[str, Any]) -> None:
         events.write("stats", **sample)
         if hub is not None:
             hub.publish("system", sample)

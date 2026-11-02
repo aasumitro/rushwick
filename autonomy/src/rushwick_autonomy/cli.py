@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-from typing import List, Optional
 
 from .app import main
 
@@ -14,7 +13,7 @@ KILL_SWITCH_HINT = (
 )
 
 
-def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(prog="rushwick-autonomy", description="Rushwick Autonomy: the driving stack that runs on the vehicle.")
     p.add_argument("--hardware", choices=["sim", "real"], default="sim", help="sim: Rushwick connects over WebSocket; real: the car (track stage)")
     p.add_argument("--listen", default="0.0.0.0:8765", help="host:port to listen on with --hardware sim")
