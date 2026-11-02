@@ -3,7 +3,7 @@
 This document specifies the Jetson alternative to the Raspberry Pi 5 build in [`pi.md`](pi.md). The car, the actuation and safety chain, the sensors, the track and the tools stay the same. Only the compute board changes, and with it the power supply, the camera, a few interfaces and the software stack. Read the Pi document first; this one lists what differs.
 
 > [!NOTE]
-> Specifications of named parts are approximate; check the datasheet of the unit you buy. The simulator's `rc-jetson` profile (section 7) carries estimates until then, so every perception and compute number here is a target to measure in Phase C.
+> Specifications of named parts are approximate; check the datasheet of the unit you buy. The simulator's `rc-jetson` profile (section 7) carries estimates until then, so every perception and compute number here is a target to measure on the board ([`hil.md`](../hil.md)).
 
 ---
 
@@ -104,13 +104,10 @@ The requirements of the Pi document's section 6.5 stay: ≥ 100° horizontal fie
 
 ## 6. Software stack
 
-- **Python:** JetPack 6's Python 3.10 meets the car program's 3.9 minimum. Use a virtualenv and `pip install -e "autonomy[test]"`; `pytest autonomy/tests` must pass on the board.
+- **Python:** JetPack 6's Python 3.10 meets the car program's 3.9 minimum. Use a virtualenv and `pip install -e "autonomy[jetson,test]"`; `pytest autonomy/tests` must pass on the board ([`hil.md`](../hil.md) section 2.2).
 - **ONNX on the GPU:** the `onnx` extra installs the CPU build of `onnxruntime`. For the GPU, install NVIDIA's `onnxruntime-gpu` build for your JetPack version (from the Jetson AI Lab package index), or convert the model to a TensorRT engine.
-- **Required code change:** with a GPU build of onnxruntime, `InferenceSession` must be given its `providers` explicitly (TensorRT, CUDA, CPU). `OnnxPolicy.load()` in [`policy.py`](../../src/rushwick_autonomy/policy.py) does not pass them yet; add that before the first Jetson run.
-- **Monitoring for the HIL logs (batch 15):**
-  - `tegrastats` reports temperatures, clock frequencies (throttling shows as dropped clocks) and power rails;
-  - `nvpmodel -q` reports the power mode.
-  - The HIL logging must support these next to the Pi's `vcgencmd`.
+- **Execution providers:** a GPU build of onnxruntime needs its `providers` named explicitly. `OnnxPolicy` and the benchmark take them from `onnx_providers` in [`configs/jetson.json`](../../configs/jetson.json) (TensorRT, CUDA, CPU) and cache TensorRT engines next to the model.
+- **Monitoring:** with `--config` and `--log`, the HIL log records `tegrastats` once per second: temperatures, clocks, loads and input power (throttling shows as dropped clocks). Record `nvpmodel -q` with every measurement.
 - **Containers (optional):** NVIDIA's L4T containers or `jetson-containers` give reproducible CUDA, TensorRT and PyTorch versions.
 
 ## 7. Simulation profile
@@ -146,15 +143,15 @@ Start from the Pi document's bill of materials, then:
 
 All other rows stay: chassis, servo, ESC, motor, drive LiPo, PCA9685, hardware watchdog, RC transmitter and multiplexer, cables, bench stand, tools, encoder, IMU, lidar, overhead camera, AprilTags and track materials.
 
-## 9. Checklist before batch 15
+## 9. Checklist before the first HIL run
 
-These replace the Pi checklist's first three items; the rest of the Pi checklist (servo, ESC, watchdog, kill switch, channel map, bench stand) applies unchanged.
+The procedure, with every command, is in [`hil.md`](../hil.md). These replace the Pi checklist's first three items; the rest of the Pi checklist (servo, ESC, watchdog, kill switch, channel map, bench stand) applies unchanged.
 
 - [ ] JetPack 6.2 or newer runs from the NVMe SSD; the virtualenv passes `pytest autonomy/tests`; the Ethernet link to the laptop is up.
 - [ ] The `nvpmodel` mode is fixed and `jetson_clocks` is on; after 10 minutes of full CPU and GPU load `tegrastats` shows no throttling.
 - [ ] The PCA9685 answers on the header's I2C bus (`i2cdetect -y -r <bus>`), and after clock calibration a commanded 1500 µs pulse measures within ±5 µs.
 - [ ] The heartbeat pin is configured as GPIO (`jetson-io.py`), and stopping the heartbeat disables the PCA9685 outputs within 100 ms.
-- [ ] `OnnxPolicy` runs a model on the GPU with explicit `providers` (section 6).
+- [ ] `python -m rushwick_autonomy.bench --config autonomy/configs/jetson.json` reports the TensorRT and CUDA providers (section 6).
 
 ## 10. Open decisions
 

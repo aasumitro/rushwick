@@ -22,6 +22,7 @@ autonomy/
   tests/                  pytest suite and the encoder golden vectors (tests/golden/)
   docs/hardware/          prototype hardware: Raspberry Pi 5 (pi.md) or Jetson Orin Nano (jetson.md)
   docs/connectivity.md    network, remote access (SSH, rsync), phone teleop and telemetry design
+  docs/hil.md             hardware-in-the-loop procedure: board setup, bench checklist, calibration
 ```
 
 | Module | Role |
@@ -31,7 +32,7 @@ autonomy/
 | `driver.py`, `loop.py` | One safe command per frame: the policy or the phone proposes, safety decides, outputs, log and telemetry record; the loop handles the bridge messages and the watchdog |
 | `teleop.py`, `teleop_server.py`, `teleop_page.html`, `telemetry.py` | `--teleop`: manual driving from a phone (page and WebSocket on port 8080, token, one controller, deadman, 250 ms watchdog, modes) and telemetry publish/subscribe ([`docs/connectivity.md`](docs/connectivity.md)) |
 | `outputs.py`, `heartbeat.py` | With `--actuate`: every safe command mirrored to the servo and ESC, and a 20 Hz GPIO heartbeat for the hardware watchdog |
-| `hardware.py` | `Hardware` protocol; `SimHardware` is the WebSocket server Rushwick connects to; `RealHardware` is a stub until Phase C |
+| `hardware.py` | `Hardware` protocol; `SimHardware` is the WebSocket server Rushwick connects to; `RealHardware` is a stub until the track stage (the bench uses `--actuate`) |
 | `policy.py` | `EchoPolicy` (returns the frame's teacher action, for the SIL echo check) and `OnnxPolicy` (a trained model) |
 | `onnx_session.py`, `bench.py` | ONNX sessions on the board config's execution providers (TensorRT → CUDA → CPU on the Jetson, with a TensorRT engine cache next to the model), and `python -m rushwick_autonomy.bench --model detector.onnx --config <board>.json` to time a perception model at the camera rate |
 | `lane_keeper.py` | `SimpleLaneKeeper`, a pure-pursuit smoke-test policy |
@@ -40,6 +41,7 @@ autonomy/
 | `config.py`, `config_file.py` | Board config types, and loading with checks (`configs/<board>.json`) |
 | `pca9685.py` | Minimal PCA9685 driver (and a fake I2C bus); the configured oscillator frequency is the pulse-width calibration knob |
 | `actuation.py` | Safe command → steering and throttle pulses; on the bench the throttle mirrors the simulated speed |
+| `calibrate.py` | `python -m rushwick_autonomy.calibrate`: cycles one channel through given pulse widths while the heartbeat runs, with an optional LED for the actuation-delay video ([`docs/hil.md`](docs/hil.md) section 6) |
 
 Policies get frames in real units and return commands in real units. `OnnxPolicy` converts the observation to sim units and encodes it exactly like Rushwick, because models learn from recorded datasets in sim units; `tests/test_encoder_golden.py` checks the encoder against `tests/golden/`, which `npm run sim:golden` exports.
 

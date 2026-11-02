@@ -39,7 +39,8 @@ def make_inputs(spec: Any, size: int, frames: str | None, count: int = 8) -> lis
 
 
 def run_bench(session: Any, inputs: list[np.ndarray], rate: float, seconds: float, clock: Callable[[], float] = time.perf_counter, sleep: Callable[[float], None] = time.sleep) -> list[float]:
-    """Latencies (ms) of one inference per period of `rate` Hz (back to back when rate is 0)."""
+    """Latencies (ms) of one inference per slot of a `rate` Hz clock (back to back when rate is 0). Like camera
+    frames: a late wake-up does not shift the schedule, and an overrun slot is skipped, like a dropped frame."""
     name = session.get_inputs()[0].name
     latencies: list[float] = []
     start = clock()
@@ -48,7 +49,7 @@ def run_bench(session: Any, inputs: list[np.ndarray], rate: float, seconds: floa
         session.run(None, {name: inputs[len(latencies) % len(inputs)]})
         latencies.append((clock() - t0) * 1000)
         if rate > 0:
-            sleep(max(0.0, 1 / rate - (clock() - t0)))
+            sleep(1 / rate - (clock() - start) % (1 / rate))
     return latencies
 
 

@@ -55,19 +55,19 @@ def test_benchmark_inputs_fill_dynamic_dimensions():
     assert len(inputs) == 2 and inputs[0].shape == (1, 3, 224, 224) and inputs[0].dtype == np.uint8
 
 
-def test_benchmark_runs_at_the_requested_rate():
+def test_benchmark_keeps_the_rate_when_sleeps_overshoot():
     now = [0.0]
 
     def clock():
         return now[0]
 
     def sleep(s):
-        now[0] += s
+        now[0] += s + 0.005  # a loaded board wakes up late
 
     class Timed(FakeSession):
         def run(self, outputs, feeds):
             now[0] += 0.02  # 20 ms per inference
             return super().run(outputs, feeds)
 
-    latencies = run_bench(Timed("m", []), [np.zeros(1)], rate=10, seconds=0.95, clock=clock, sleep=sleep)
-    assert len(latencies) == 10 and all(abs(ms - 20) < 1e-6 for ms in latencies)
+    latencies = run_bench(Timed("m", []), [np.zeros(1)], rate=10, seconds=2.95, clock=clock, sleep=sleep)
+    assert len(latencies) == 30 and all(abs(ms - 20) < 1e-6 for ms in latencies)
