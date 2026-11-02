@@ -10,6 +10,8 @@ rushwick-autonomy --hardware sim --listen 0.0.0.0:8765 --policy simple   # or: p
 
 Then let Rushwick connect, for example `npm run sim:bridge -- --mode lockstep --profile rc-pi --episodes 3`.
 
+On a board, `--actuate --config autonomy/configs/<board>.json` also drives the real servo and ESC (bench only, wheels off the ground). It refuses to start without `--i-have-a-kill-switch`, which confirms the bench checklist in `docs/hil.md`.
+
 ## Layout
 
 ```
@@ -24,7 +26,8 @@ autonomy/
 
 | Module | Role |
 | :--- | :--- |
-| `cli.py` | Command line: hardware backend, listen address, policy, speed cap, lidar stop |
+| `cli.py`, `app.py` | Command line (hardware backend, listen address, policy, speed cap, lidar stop, board config, `--actuate`) and the wiring that runs it |
+| `outputs.py`, `heartbeat.py` | With `--actuate`: every safe command mirrored to the servo and ESC, and a 20 Hz GPIO heartbeat for the hardware watchdog |
 | `hardware.py` | `Hardware` protocol; `SimHardware` is the WebSocket server Rushwick connects to; `RealHardware` is a stub until Phase C |
 | `loop.py` | Runs the policy on control-tick frames and resends the last command otherwise; the frame `stamp` is the clock in lockstep, a 200 ms wall-clock watchdog brakes in realtime |
 | `policy.py` | `EchoPolicy` (returns the frame's teacher action, for the SIL echo check) and `OnnxPolicy` (a trained model) |

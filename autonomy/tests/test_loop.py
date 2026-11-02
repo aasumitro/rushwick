@@ -64,3 +64,21 @@ def test_brakes_when_frames_stop_in_realtime():
     sent, _ = drive([dict(HELLO, mode="realtime"), frame(0, True)], timeouts=1)
     # The fake hardware has nothing more to read: the watchdog brakes with the last seq.
     assert sent[-1] == (0, Command(FULL_BRAKE, 0.0))
+
+
+class RecordingSink:
+    def __init__(self):
+        self.got = []
+
+    def command(self, cmd, frame):
+        self.got.append((cmd, frame is None))
+
+    def close(self):
+        pass
+
+
+def test_every_command_and_the_watchdog_brake_reach_the_sink():
+    sink = RecordingSink()
+    hw = FakeHardware([dict(HELLO, mode="realtime"), frame(0, True)])
+    asyncio.run(run(hw, lambda hello: CountingPolicy(), Safety(SafetyConfig()), log=lambda s: None, max_messages=3, sink=sink))
+    assert sink.got == [(Command(0.1, 1.0), False), (Command(FULL_BRAKE, 0.0), True)]
