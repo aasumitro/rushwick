@@ -61,6 +61,20 @@ describe('resolveProfile', () => {
     expect(r.world).toBe(rc.world);
   });
 
+  it('builds rc-jetson from rc-pi: only the compute delay, jitter and camera timing differ', () => {
+    const pi = resolveProfile(getProfile('rc-pi'));
+    const jetson = resolveProfile(getProfile('rc-jetson'));
+    expect(jetson.scale).toBe(pi.scale);
+    expect(jetson.vehicle).toEqual(pi.vehicle);
+    expect(jetson.world).toBe(pi.world);
+    expect(jetson.actuators).toEqual({ ...pi.actuators, computeDelay: 0.025, delayJitter: 0.008 });
+    expect(jetson.sensors).toEqual({
+      ...pi.sensors,
+      objects: { ...pi.sensors.objects, rateHz: 20, latency: 0.05 },
+      signals: { ...pi.sensors.signals, rateHz: 20, latency: 0.05 },
+    });
+  });
+
   it('divides per-meter rates by scale and keeps angles, times, rates and ratios', () => {
     const r = resolveProfile(tenth);
     expect(r.sensors.objects.missRatePerMeter).toBeCloseTo(0.003);

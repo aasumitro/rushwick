@@ -1,12 +1,14 @@
 import type { PlatformProfile } from '../types';
 import { IDEAL_PROFILE } from './ideal';
 import { PASSENGER_CAR_PROFILE } from './passengerCar';
+import { RC_JETSON_PROFILE } from './rcJetson';
 import { RC_PI_PROFILE } from './rcPi';
 
 /** Built-in platforms by name. Their values are a contract: changing one changes recorded datasets. */
 export const PLATFORM_PROFILES: Readonly<Record<string, PlatformProfile>> = {
   [IDEAL_PROFILE.name]: IDEAL_PROFILE,
   [RC_PI_PROFILE.name]: RC_PI_PROFILE,
+  [RC_JETSON_PROFILE.name]: RC_JETSON_PROFILE,
   [PASSENGER_CAR_PROFILE.name]: PASSENGER_CAR_PROFILE,
 };
 

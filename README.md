@@ -44,7 +44,7 @@ npm run dev
 
 Open http://localhost:3000. The ego car starts on **autopilot**, driven by the rule-based baseline.
 
-- **World panel:** platform profile, seed, driving side, signal mode, traffic and pedestrian density, jaywalking rate. Click **Regenerate city** to apply. Picking a platform resets the traffic sliders to that platform's world (an empty track for `rc-pi`).
+- **World panel:** platform profile, seed, driving side, signal mode, traffic and pedestrian density, jaywalking rate. Click **Regenerate city** to apply. Picking a platform resets the traffic sliders to that platform's world (an empty track for the RC profiles).
 - **Runtime panel:** play, pause and single-step, new episode, decision model (including **Remote (WebSocket)**, a car program, see [Software-in-the-Loop](#software-in-the-loop)), camera, route, lidar and sensed-object overlays, auto-restart, and playback speed from 0.5× to 8×. Changes apply immediately.
 - **HUD:** speed, steering, platform, the delay of the newest command, the next signal, route progress and what the ego currently perceives. On a realistic platform the decision model, the lidar overlay and the **Show sensed objects** outlines all use the sensed observation, and manual driving goes through the platform's actuators too, so you can feel the delay.
 
@@ -125,22 +125,23 @@ const sim = new Simulation({ seed: 1, profile: 'rc-pi' });
 | :--- | :--- | ---: |
 | `ideal` (default) | Exact sensing and instant actuation, the behavior from before profiles existed | 1 |
 | `rc-pi` | 1:10 RC car with a Raspberry Pi 5 | 10 |
+| `rc-jetson` | The same RC car with a Jetson Orin Nano 8 GB | 10 |
 | `passenger-car` | Full-size car with a 360° lidar and object detection | 1 |
 
 Profiles are written in real units, as measured on the bench. `resolveProfile()` converts them to sim units: a 1:10 car becomes its full-size twin, with lengths, speeds and accelerations multiplied by 10 and time unchanged. The kinematic bicycle model behaves exactly the same under this transform, so city generation, traffic and signal timing stay untouched.
 
 Key values, in real units:
 
-| | `rc-pi` | `passenger-car` |
-| :--- | :--- | :--- |
-| Control rate | 20 Hz | 20 Hz |
-| Command delay (compute + actuation ± jitter) | 60 + 20 ± 15 ms | 80 + 60 ± 15 ms |
-| Longitudinal lag | 0.15 s | 0.35 s |
-| Steering-center error (std, per episode) | 0.03 rad | 0.005 rad |
-| Localization | ±2 cm, plus a slow 3 cm drift | ±10 cm, plus a slow 20 cm drift |
-| Lidar | 10 Hz, 12 m, ±2 cm, 2% dropouts | 10 Hz, 50 m, ±3 cm, 1% dropouts |
-| Object detection | 10 Hz, 100 ms late, 100° field of view, 3 m, occlusion | 10 Hz, 100 ms late, 360°, 60 m, occlusion |
-| Traffic lights | within 5 m, 5% missed, 2% misread | within 80 m, 2% missed, 1% misread |
+| | `rc-pi` | `rc-jetson` | `passenger-car` |
+| :--- | :--- | :--- | :--- |
+| Control rate | 20 Hz | 20 Hz | 20 Hz |
+| Command delay (compute + actuation ± jitter) | 60 + 20 ± 15 ms | 25 + 20 ± 8 ms | 80 + 60 ± 15 ms |
+| Longitudinal lag | 0.15 s | 0.15 s | 0.35 s |
+| Steering-center error (std, per episode) | 0.03 rad | 0.03 rad | 0.005 rad |
+| Localization | ±2 cm, plus a slow 3 cm drift | ±2 cm, plus a slow 3 cm drift | ±10 cm, plus a slow 20 cm drift |
+| Lidar | 10 Hz, 12 m, ±2 cm, 2% dropouts | 10 Hz, 12 m, ±2 cm, 2% dropouts | 10 Hz, 50 m, ±3 cm, 1% dropouts |
+| Object detection | 10 Hz, 100 ms late, 100° field of view, 3 m, occlusion | 20 Hz, 50 ms late, 100° field of view, 3 m, occlusion | 10 Hz, 100 ms late, 360°, 60 m, occlusion |
+| Traffic lights | 10 Hz, 100 ms late, within 5 m, 5% missed, 2% misread | 20 Hz, 50 ms late, within 5 m, 5% missed, 2% misread | 10 Hz, 100 ms late, within 80 m, 2% missed, 1% misread |
 
 What changes for a decision model:
 
@@ -151,7 +152,7 @@ What changes for a decision model:
 - The same `(config, seed)` still produces the same episode: sensor noise is drawn once per physics step, from its own random stream per channel.
 
 > [!NOTE]
-> The `rc-pi` values are assumptions until they are measured on the real car. Its world is a **placeholder track** until the room for the physical track is measured: a 2×2 grid at 30 m spacing (a 4.7 m square of floor at 1:10) without traffic. Its four corners are plain turns, so it forms two one-way loops without signals.
+> The `rc-pi` values are assumptions, and the `rc-jetson` values estimates, until they are measured on the real car. `rc-jetson` takes everything except the compute delay and the camera timing from `rc-pi`. Their world is a **placeholder track** until the room for the physical track is measured: a 2×2 grid at 30 m spacing (a 4.7 m square of floor at 1:10) without traffic. Its four corners are plain turns, so it forms two one-way loops without signals.
 
 ---
 
@@ -169,7 +170,7 @@ npm run sim:headless -- --episodes 10 --seed 3 --profile rc-pi --teacher ideal -
 | `--episodes N` | `5` | Number of episodes to run |
 | `--seed N` | `1` | City and traffic seed |
 | `--side left\|right` | `left` | Driving side |
-| `--profile NAME` | `ideal` | Platform profile: `ideal`, `rc-pi` or `passenger-car` |
+| `--profile NAME` | `ideal` | Platform profile: `ideal`, `rc-pi`, `rc-jetson` or `passenger-car` |
 | `--teacher ideal\|sensed` | `sensed` | What the expert acts on: the exact observation (a privileged teacher) or what the platform senses |
 | `--vehicles N` | the profile's (`260` for `ideal`) | Background vehicles |
 | `--pedestrians N` | the profile's (`520` for `ideal`) | Pedestrians |
@@ -209,7 +210,7 @@ The program that will drive the real car can drive Rushwick instead, over a WebS
 - Units on the wire are real. Lengths, speeds and accelerations are divided by the profile's scale (10 for `rc-pi`); command accelerations are multiplied back. Angles, yaw rates, times and normalized steering are unchanged.
 - Numbers that are not finite, such as an unknown `timeLeft`, travel as `null`.
 - On frames without `controlTick` the platform ignores new commands, so the car program resends its last one.
-- To encode features like `encodeObservation()`, a car program converts the observation back to sim units and uses the `sensors` config from `hello`. [`autonomy/tests/golden/encoder-v1.json`](autonomy/tests/golden/encoder-v1.json) holds golden vectors to test such an encoder against: sensed observations from every profile (sim units, plus the wire form for `rc-pi`) and their exact features. `npm run sim:golden` regenerates it, byte for byte.
+- To encode features like `encodeObservation()`, a car program converts the observation back to sim units and uses the `sensors` config from `hello`. [`autonomy/tests/golden/encoder-v1.json`](autonomy/tests/golden/encoder-v1.json) holds golden vectors to test such an encoder against: sensed observations from the `ideal`, `passenger-car` and `rc-pi` profiles (sim units, plus the wire form for `rc-pi`) and their exact features. `npm run sim:golden` regenerates it, byte for byte.
 - Field names follow ROS 2 (`sensor_msgs/LaserScan`, `sensor_msgs/Imu`, `nav_msgs/Odometry`), so a later ROS 2 bridge is a 1:1 mapping.
 
 Start a car program that listens on a WebSocket, then let it drive:
@@ -330,8 +331,10 @@ On a realistic [platform profile](#platform-profiles) the same expert runs in tw
 | `passenger-car` | sensed | 9 / 18 | 5 | 0 | 1 | 0 | 3 | 0 | 0.671 |
 | `rc-pi`, placeholder track | exact (privileged teacher) | 18 / 18 | 0 | 0 | 0 | 0 | 0 | 0 | 0.845 |
 | `rc-pi`, placeholder track | sensed | 10 / 18 | 0 | 0 | 0 | 0 | 8 | 0 | 0.629 |
+| `rc-jetson`, placeholder track | exact (privileged teacher) | 18 / 18 | 0 | 0 | 0 | 0 | 0 | 0 | 0.845 |
+| `rc-jetson`, placeholder track | sensed | 10 / 18 | 0 | 0 | 0 | 0 | 8 | 0 | 0.598 |
 
-As a privileged teacher the expert stays safe on both platforms. On sensed observations it does not: noise, latency, occlusion and unknown lights cost it collisions and curb strikes. That gap is what a model trained on realistic observations has to close. The `rc-pi` track has no traffic or signals yet, so its episodes are short and only test lane keeping and turning.
+As a privileged teacher the expert stays safe on every platform. On sensed observations it does not: noise, latency, occlusion and unknown lights cost it collisions and curb strikes. That gap is what a model trained on realistic observations has to close. The RC track has no traffic or signals yet, so its episodes are short and only test lane keeping and turning. On it, the shorter compute delay of `rc-jetson` does not prevent the sensed curb strikes, and its faster camera channels have nothing to detect.
 
 To reproduce a row, pick the profile and the teacher (`ideal` for the privileged rows, `sensed` for the others):
 

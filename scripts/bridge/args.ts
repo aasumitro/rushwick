@@ -19,7 +19,7 @@ const USAGE = `Usage: npm run sim:bridge -- [options]
   --url URL                 car program WebSocket (default ws://localhost:8765)
   --mode lockstep|realtime  lockstep waits for every command and is deterministic;
                             realtime steps at wall-clock pace and measures latency (default lockstep)
-  --profile NAME            platform profile: ideal, rc-pi, passenger-car (default ideal)
+  --profile NAME            platform profile: ideal, rc-pi, rc-jetson, passenger-car (default ideal)
   --episodes N              episodes to run (default 1)
   --minutes N               instead of --episodes: keep starting episodes for N minutes (long HIL runs)
   --seed N                  city/traffic seed (default 1)
