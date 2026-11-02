@@ -4,26 +4,26 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import Any, Dict, Set
+from typing import Any
 
 
 class TelemetryHub:
     def __init__(self) -> None:
-        self.latest: Dict[str, Any] = {}
-        self.subscribers: Dict[Any, Set[str]] = {}
-        self._fresh: Set[str] = set()
+        self.latest: dict[str, Any] = {}
+        self.subscribers: dict[Any, set[str]] = {}
+        self._fresh: set[str] = set()
 
     def publish(self, topic: str, data: Any) -> None:
         self.latest[topic] = data
         self._fresh.add(topic)
 
-    def subscribe(self, client: Any, topics: Set[str]) -> None:
+    def subscribe(self, client: Any, topics: set[str]) -> None:
         self.subscribers[client] = set(topics)
 
     def unsubscribe(self, client: Any) -> None:
         self.subscribers.pop(client, None)
 
-    def pending(self) -> Dict[Any, Dict[str, Any]]:
+    def pending(self) -> dict[Any, dict[str, Any]]:
         """For every subscriber, the topics published since the last call and their newest data."""
         fresh, self._fresh = self._fresh, set()
         return {c: {t: self.latest[t] for t in topics & fresh} for c, topics in self.subscribers.items()}

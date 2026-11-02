@@ -4,7 +4,7 @@ decides, and the outputs, the event log and the telemetry record what happened."
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 from .events import EventLog
 from .outputs import CommandSink
@@ -18,17 +18,17 @@ class Driver:
     def __init__(
         self,
         safety: Safety,
-        sink: Optional[CommandSink] = None,
-        events: Optional[EventLog] = None,
-        teleop: Optional[Teleop] = None,
-        hub: Optional[TelemetryHub] = None,
+        sink: CommandSink | None = None,
+        events: EventLog | None = None,
+        teleop: Teleop | None = None,
+        hub: TelemetryHub | None = None,
     ) -> None:
         self.safety, self.sink, self.teleop, self.hub = safety, sink, teleop, hub
         self.events = events or EventLog(None)
-        self.policy: Optional[Policy] = None
+        self.policy: Policy | None = None
         self.last = Command(0.0, 0.0)
 
-    def start(self, policy: Optional[Policy]) -> None:
+    def start(self, policy: Policy | None) -> None:
         """A new session (hello), or none (disconnected): idle command."""
         self.policy = policy
         self.last = Command(0.0, 0.0)
@@ -39,7 +39,7 @@ class Driver:
         if self.policy is not None:
             self.policy.reset()
 
-    def frame(self, msg: Dict[str, Any]) -> Command:
+    def frame(self, msg: dict[str, Any]) -> Command:
         """The command for this frame. Policies run only on control ticks; other frames repeat the last command."""
         received, policy_ms = time.perf_counter(), None
         speed = msg["odom"]["twist"]["linear"]["x"]
@@ -68,7 +68,7 @@ class Driver:
         self._publish(None, braking=True)
         return brake
 
-    def _publish(self, speed: Optional[float], braking: bool) -> None:
+    def _publish(self, speed: float | None, braking: bool) -> None:
         if self.hub is not None:
             mode = self.teleop.mode if self.teleop is not None else "autonomous"
             self.hub.publish("state", {

@@ -9,10 +9,10 @@ from __future__ import annotations
 import argparse
 import json
 import math
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 
-def percentiles(values: List[float]) -> str:
+def percentiles(values: list[float]) -> str:
     if not values:
         return "n/a"
     s = sorted(values)
@@ -20,12 +20,12 @@ def percentiles(values: List[float]) -> str:
     return f"p50 {pick(0.5):.2f} · p95 {pick(0.95):.2f} · p99 {pick(0.99):.2f} ms (n={len(s)})"
 
 
-def read(path: str) -> List[Dict[str, Any]]:
+def read(path: str) -> list[dict[str, Any]]:
     with open(path) as f:
         return [json.loads(line) for line in f if line.strip()]
 
 
-def board_summary(events: List[Dict[str, Any]]) -> List[str]:
+def board_summary(events: list[dict[str, Any]]) -> list[str]:
     frames = [e for e in events if e["kind"] == "frame"]
     stats = [e for e in events if e["kind"] == "stats"]
     lines = [
@@ -42,7 +42,7 @@ def board_summary(events: List[Dict[str, Any]]) -> List[str]:
     return lines
 
 
-def bridge_summary(steps: List[Dict[str, Any]]) -> List[str]:
+def bridge_summary(steps: list[dict[str, Any]]) -> list[str]:
     ticks = [s for s in steps if s.get("controlTick")]
     misses = sum(1 for s in ticks if s.get("deadlineMiss"))
     return [
@@ -52,7 +52,7 @@ def bridge_summary(steps: List[Dict[str, Any]]) -> List[str]:
     ]
 
 
-def main(argv: Optional[List[str]] = None) -> None:
+def main(argv: list[str] | None = None) -> None:
     p = argparse.ArgumentParser(prog="python -m rushwick_autonomy.report")
     p.add_argument("board_log")
     p.add_argument("--bridge", help="the sim:bridge --log of the same run")

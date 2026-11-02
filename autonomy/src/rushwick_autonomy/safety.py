@@ -11,7 +11,7 @@ from __future__ import annotations
 import math
 from collections import Counter
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any
 
 #: A braking request beyond any vehicle's limit (m/s²): the platform brakes as hard as it can.
 FULL_BRAKE = -100.0
@@ -28,7 +28,7 @@ class Command:
 @dataclass
 class SafetyConfig:
     #: Speed cap (m/s); None caps at `speed_limit_margin` times the posted limit.
-    max_speed: Optional[float] = None
+    max_speed: float | None = None
     speed_limit_margin: float = 1.2
     #: Brake for lidar returns inside the clearance ahead. Off in SIL by default: the
     #: simulated 2D lidar sees curbs as walls (block outlines), which a corner turn crosses.
@@ -47,7 +47,7 @@ class Safety:
         #: How often each rule intervened.
         self.interventions: Counter = Counter()
 
-    def check(self, cmd: Command, obs: Dict[str, Any]) -> Command:
+    def check(self, cmd: Command, obs: dict[str, Any]) -> Command:
         """The command made safe for this observation (real units)."""
         acceleration, steering = cmd.acceleration, cmd.steering
         if not math.isfinite(acceleration) or not math.isfinite(steering):
@@ -69,12 +69,12 @@ class Safety:
         self.interventions["watchdog"] += 1
         return Command(FULL_BRAKE, 0.0)
 
-    def _speed_cap(self, obs: Dict[str, Any]) -> float:
+    def _speed_cap(self, obs: dict[str, Any]) -> float:
         if self.cfg.max_speed is not None:
             return self.cfg.max_speed
         return self.cfg.speed_limit_margin * obs["route"]["speedLimit"]
 
-    def _blocked_ahead(self, obs: Dict[str, Any]) -> bool:
+    def _blocked_ahead(self, obs: dict[str, Any]) -> bool:
         """A lidar return closer than the clearance in front of the bumper (rays start at the vehicle center)."""
         ego, rays = obs["ego"], obs["lidar"]
         limit = ego["length"] / 2 + self.cfg.clearance * ego["length"]

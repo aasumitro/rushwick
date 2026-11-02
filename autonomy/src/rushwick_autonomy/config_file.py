@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Dict, Sequence, Union
+from typing import Any
 
 from .config import BoardConfig, HeartbeatConfig, I2cConfig, PwmConfig, SteeringConfig, ThrottleConfig
 
@@ -30,7 +31,7 @@ def _check(cfg: BoardConfig) -> None:
         raise ValueError("pulse widths must be within 500-2500 µs")
 
 
-def parse_config(raw: Dict[str, Any]) -> BoardConfig:
+def parse_config(raw: dict[str, Any]) -> BoardConfig:
     cfg = BoardConfig(
         board=raw["board"],
         i2c=I2cConfig(**raw["i2c"]),
@@ -45,7 +46,7 @@ def parse_config(raw: Dict[str, Any]) -> BoardConfig:
     return cfg
 
 
-def load_config(path: Union[str, Path]) -> BoardConfig:
+def load_config(path: str | Path) -> BoardConfig:
     """Load and check a board config; every problem names the file. A top-level "notes" key is ignored."""
     try:
         raw = json.loads(Path(path).read_text())

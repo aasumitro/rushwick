@@ -8,7 +8,7 @@ tests/test_encoder_golden.py checks it against the golden vectors exported by
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 
@@ -18,7 +18,7 @@ FEATURE_VERSION = 1
 EGO_F, WP_F, ROUTE_F, STOP_F, VEH_F, PED_F = 5, 3, 3, 6, 9, 5
 
 
-def feature_size(cfg: Dict[str, Any]) -> int:
+def feature_size(cfg: dict[str, Any]) -> int:
     return EGO_F + cfg["waypoints"] * WP_F + ROUTE_F + STOP_F + cfg["maxAgents"] * (VEH_F + PED_F) + cfg["lidarRays"]
 
 
@@ -26,14 +26,14 @@ def _finite(v: Any) -> bool:
     return isinstance(v, (int, float)) and math.isfinite(v)
 
 
-def _at(items: List[Any], k: int) -> Optional[Any]:
+def _at(items: list[Any], k: int) -> Any | None:
     return items[k] if k < len(items) else None
 
 
-def encode_observation(obs: Dict[str, Any], cfg: Dict[str, Any]) -> np.ndarray:
+def encode_observation(obs: dict[str, Any], cfg: dict[str, Any]) -> np.ndarray:
     """Fixed-length, roughly unit-scaled float32 features; `cfg` is the sensor config from `hello`."""
     ego, route = obs["ego"], obs["route"]
-    f: List[float] = [ego["speed"] / 20, ego["accel"] / 5, ego["steer"] / ego["maxSteer"], ego["yawRate"], route["speedLimit"] / 20]
+    f: list[float] = [ego["speed"] / 20, ego["accel"] / 5, ego["steer"] / ego["maxSteer"], ego["yawRate"], route["speedLimit"] / 20]
     for k in range(cfg["waypoints"]):
         wp = _at(route["waypoints"], k)
         f += [wp["x"] / 50, wp["y"] / 50, wp["speedLimit"] / 20] if wp else [0, 0, 0]

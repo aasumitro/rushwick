@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Protocol
+from typing import Any, Protocol
 
 from .actuation import Actuation
 from .safety import Command
 
 
 class CommandSink(Protocol):
-    def command(self, cmd: Command, frame: Optional[Dict[str, Any]]) -> None:
+    def command(self, cmd: Command, frame: dict[str, Any] | None) -> None:
         """Called after every command sent; `frame` is None for a watchdog brake."""
         ...
 
@@ -24,7 +24,7 @@ class ActuatedOutputs:
         self.actuation = actuation
         actuation.neutral()
 
-    def command(self, cmd: Command, frame: Optional[Dict[str, Any]]) -> None:
+    def command(self, cmd: Command, frame: dict[str, Any] | None) -> None:
         if frame is None:
             self.actuation.neutral()
         else:

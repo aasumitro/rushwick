@@ -5,19 +5,19 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import Any, Dict, Optional, Protocol
+from typing import Any, Protocol
 
 from websockets.asyncio.server import ServerConnection, serve
 
 from .safety import Command
 
-Message = Dict[str, Any]
+Message = dict[str, Any]
 
 
 class Hardware(Protocol):
     async def start(self) -> None: ...
 
-    async def read_frame(self, timeout: Optional[float]) -> Optional[Message]:
+    async def read_frame(self, timeout: float | None) -> Message | None:
         """The next frame or bridge event (hello, episode, disconnected); None after `timeout` seconds without one."""
         ...
 
@@ -30,16 +30,20 @@ class SimHardware:
     def __init__(self, host: str, port: int) -> None:
         self.host, self.port = host, port
         self._inbox: "asyncio.Queue[Message]" = asyncio.Queue()
-        self._ws: Optional[ServerConnection] = None
+        self._ws: ServerConnection | None = None
 
     async def start(self) -> None:
         self._server = await serve(self._handle, self.host, self.port, max_size=None)
 
-    async def read_frame(self, timeout: Optional[float]) -> Optional[Message]:
-        try:
-            return await asyncio.wait_for(self._inbox.get(), timeout)
-        except asyncio.TimeoutError:
-            return None
+    async def read_frame(self, timeout: float | None) -> Message | None:
+        # asyncio.wait instead of wait_for: no timeout exception, whose class differs before 3.11.
+        # A getter cancelled after the timeout leaves its message in the queue.
+        getter = asyncio.create_task(self._inbox.get())
+        done, _ = await asyncio.wait({getter}, timeout=timeout)
+        if getter in done:
+            return getter.result()
+        getter.cancel()
+        return None
 
     async def write_command(self, seq: int, cmd: Command) -> None:
         if self._ws is not None:

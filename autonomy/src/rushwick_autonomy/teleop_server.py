@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from http import HTTPStatus
 from importlib import resources
-from typing import Any, Dict, Optional
+from typing import Any
 from urllib.parse import parse_qs, urlsplit
 
 from websockets.asyncio.server import Server, ServerConnection, serve
@@ -24,7 +24,7 @@ class TeleopServer:
     def __init__(self, teleop: Teleop, hub: TelemetryHub, token: str) -> None:
         self.teleop, self.hub, self.token = teleop, hub, token
 
-    def process_request(self, connection: ServerConnection, request: Request) -> Optional[Response]:
+    def process_request(self, connection: ServerConnection, request: Request) -> Response | None:
         """GET / serves the page; /ws needs the token printed at start; anything else is 404."""
         url = urlsplit(request.path)
         if url.path == "/ws":
@@ -49,7 +49,7 @@ class TeleopServer:
             self.teleop.release(client)
             self.hub.unsubscribe(ws)
 
-    async def on_message(self, ws: ServerConnection, client: str, msg: Dict[str, Any]) -> None:
+    async def on_message(self, ws: ServerConnection, client: str, msg: dict[str, Any]) -> None:
         kind = msg.get("type")
         if kind == "teleop":
             self.teleop.receive(client, msg)

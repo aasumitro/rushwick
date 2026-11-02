@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Protocol, Sequence
+from collections.abc import Sequence
+from typing import Any, Protocol
 
 import numpy as np
 
@@ -11,7 +12,7 @@ from .onnx_session import open_session
 from .safety import Command
 from .units import observation_to_sim
 
-Frame = Dict[str, Any]
+Frame = dict[str, Any]
 
 
 class Policy(Protocol):
@@ -36,7 +37,7 @@ class EchoPolicy:
 class OnnxPolicy:
     """A trained model: features from encode_observation() (sim units) in, [acceleration (sim units), steering] out."""
 
-    def __init__(self, session: Any, hello: Dict[str, Any]) -> None:
+    def __init__(self, session: Any, hello: dict[str, Any]) -> None:
         if hello["featureVersion"] != FEATURE_VERSION:
             raise RuntimeError(f"Rushwick sends feature version {hello['featureVersion']}, this encoder is version {FEATURE_VERSION}")
         self.session = session
@@ -45,7 +46,7 @@ class OnnxPolicy:
         self.sensors = hello["sensors"]
 
     @classmethod
-    def load(cls, path: str, hello: Dict[str, Any], providers: Optional[Sequence[str]] = None) -> "OnnxPolicy":
+    def load(cls, path: str, hello: dict[str, Any], providers: Sequence[str] | None = None) -> "OnnxPolicy":
         """`providers` comes from the board config (TensorRT, CUDA, CPU on the Jetson; CPU on the Pi)."""
         session, _ = open_session(path, providers)
         return cls(session, hello)

@@ -6,13 +6,13 @@ import json
 import subprocess
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 
 class EventLog:
     """Writes nothing without a path, so the loop can always call it. Lines are flushed as they are written."""
 
-    def __init__(self, path: Optional[str]) -> None:
+    def __init__(self, path: str | None) -> None:
         self.out = None
         if path:
             Path(path).parent.mkdir(parents=True, exist_ok=True)
@@ -28,7 +28,7 @@ class EventLog:
             self.out = None
 
 
-def git_commit() -> Optional[str]:
+def git_commit() -> str | None:
     """The checked-out commit, so every log says which code produced it (None outside a Git checkout)."""
     try:
         out = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=Path(__file__).parent, timeout=5)

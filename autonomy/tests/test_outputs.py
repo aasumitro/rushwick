@@ -42,7 +42,7 @@ def test_heartbeat_beats_at_20_hz_and_closes_when_cancelled():
     hb = FakeHeartbeat()
 
     async def scenario():
-        task = asyncio.ensure_future(keep_beating(hb, period=0.01))
+        task = asyncio.create_task(keep_beating(hb, period=0.01))
         await asyncio.sleep(0.055)
         task.cancel()
         await asyncio.gather(task, return_exceptions=True)
