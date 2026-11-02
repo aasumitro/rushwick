@@ -1,0 +1,11 @@
+{
+  "notes": "A laptop stand-in for dry runs: fake I2C and GPIO, no system stats. Nothing here touches hardware.",
+  "board": "laptop",
+  "i2c": { "backend": "fake", "bus": 0, "address": 64 },
+  "pwm": { "frequency_hz": 50, "oscillator_hz": 25000000 },
+  "steering": { "channel": 0, "center_us": 1500, "left_us": 2000, "right_us": 1000 },
+  "throttle": { "channel": 1, "neutral_us": 1500, "start_us": 1560, "full_us": 2000, "max_speed": 3.0 },
+  "heartbeat": { "backend": "fake", "pin": 0 },
+  "stats": "none",
+  "onnx_providers": ["CPUExecutionProvider"]
+}

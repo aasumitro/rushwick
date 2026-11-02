@@ -14,6 +14,9 @@ dependencies = ["websockets>=13", "numpy>=1.24"]
 [project.optional-dependencies]
 onnx = ["onnxruntime>=1.16"]
 test = ["pytest>=8"]
+# Board extras. On the Jetson, install onnxruntime-gpu for your JetPack from the Jetson AI Lab index instead of the onnx extra.
+pi = ["smbus2>=0.4", "gpiozero>=2.0", "lgpio>=0.2"]
+jetson = ["smbus2>=0.4", "Jetson.GPIO>=2.1"]
 
 [project.scripts]
 rushwick-autonomy = "rushwick_autonomy.cli:run_cli"

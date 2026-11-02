@@ -1,0 +1,11 @@
+{
+  "notes": "Jetson Orin Nano build (docs/hardware/jetson.md). The I2C bus and the heartbeat pin are guesses: confirm the header's bus with `i2cdetect -l` and set the pin up as GPIO with jetson-io (BOARD numbering). Pulse widths and the oscillator are assumed until the bench calibration.",
+  "board": "jetson-orin-nano",
+  "i2c": { "backend": "smbus2", "bus": 7, "address": 64 },
+  "pwm": { "frequency_hz": 50, "oscillator_hz": 25000000 },
+  "steering": { "channel": 0, "center_us": 1500, "left_us": 2000, "right_us": 1000 },
+  "throttle": { "channel": 1, "neutral_us": 1500, "start_us": 1560, "full_us": 2000, "max_speed": 3.0 },
+  "heartbeat": { "backend": "jetson-gpio", "pin": 15 },
+  "stats": "tegrastats",
+  "onnx_providers": ["TensorrtExecutionProvider", "CUDAExecutionProvider", "CPUExecutionProvider"]
+}

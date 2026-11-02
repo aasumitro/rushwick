@@ -4,7 +4,7 @@
 
 ```sh
 python3 -m venv .venv && . .venv/bin/activate
-pip install -e "autonomy[test]"          # add ,onnx for OnnxPolicy
+pip install -e "autonomy[test]"          # add ,onnx for OnnxPolicy; on a board add ,pi or ,jetson
 rushwick-autonomy --hardware sim --listen 0.0.0.0:8765 --policy simple   # or: python -m rushwick_autonomy
 ```
 
@@ -16,6 +16,7 @@ Then let Rushwick connect, for example `npm run sim:bridge -- --mode lockstep --
 autonomy/
   pyproject.toml          package rushwick-autonomy, console script rushwick-autonomy
   src/rushwick_autonomy/  the package (src layout)
+  configs/                one config per board: pi.json, jetson.json, laptop.json (fake hardware for dry runs)
   tests/                  pytest suite and the encoder golden vectors (tests/golden/)
   docs/hardware/          prototype hardware: Raspberry Pi 5 (pi.md) or Jetson Orin Nano (jetson.md)
   docs/connectivity.md    network, remote access (SSH, rsync), phone teleop and telemetry design
@@ -30,6 +31,9 @@ autonomy/
 | `lane_keeper.py` | `SimpleLaneKeeper`, a pure-pursuit smoke-test policy |
 | `safety.py` | Always between the policy and the hardware: steering clamp, speed cap, lidar stop, watchdog brake |
 | `encoder.py`, `units.py` | Ports of `encodeObservation()` and the bridge's real ↔ sim units |
+| `config.py`, `config_file.py` | Board config types, and loading with checks (`configs/<board>.json`) |
+| `pca9685.py` | Minimal PCA9685 driver (and a fake I2C bus); the configured oscillator frequency is the pulse-width calibration knob |
+| `actuation.py` | Safe command → steering and throttle pulses; on the bench the throttle mirrors the simulated speed |
 
 Policies get frames in real units and return commands in real units. `OnnxPolicy` converts the observation to sim units and encodes it exactly like Rushwick, because models learn from recorded datasets in sim units; `tests/test_encoder_golden.py` checks the encoder against `tests/golden/`, which `npm run sim:golden` exports.
 
