@@ -256,6 +256,8 @@ pytest autonomy/tests                                               # encoder go
 
 The lidar stop is off by default in SIL (`--no-lidar-stop`), because the simulated 2D lidar sees curbs as walls, see [Known Limitations](#known-limitations). `python -m rushwick_autonomy` works as well as the `rushwick-autonomy` command.
 
+With `--teleop`, the driving stack also serves a page for manual driving from a phone on the same network (joystick that doubles as the deadman, one controller at a time, full brake after 250 ms of silence) plus live telemetry; it works in SIL too, so the phone can drive the simulated car. See [`autonomy/docs/connectivity.md`](autonomy/docs/connectivity.md).
+
 The hardware for the 1:10 prototype, sensors included, is specified for two compute boards: [Raspberry Pi 5](autonomy/docs/hardware/pi.md) and [NVIDIA Jetson Orin Nano](autonomy/docs/hardware/jetson.md).
 
 ### Watch a car program drive in the browser
