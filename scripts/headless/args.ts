@@ -19,7 +19,7 @@ const USAGE = `Usage: npm run sim:headless -- [options]
   --episodes N            episodes to run (default 5)
   --seed N                city/traffic seed (default 1)
   --side left|right       driving side (default left)
-  --profile NAME          platform profile: ideal, rc-pi, passenger-car (default ideal)
+  --profile NAME          platform profile: ideal, rc-pi, rc-jetson, passenger-car (default ideal)
   --teacher ideal|sensed  observation the rule-based expert acts on (default sensed);
                           'ideal' is a privileged teacher for recording datasets
   --vehicles N            background vehicles (default: the profile's, 260 for ideal)

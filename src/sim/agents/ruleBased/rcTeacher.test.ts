@@ -4,13 +4,15 @@ import { RuleBasedAgent } from './ruleBasedAgent';
 
 /**
  * The privileged teacher (exact observations, the platform's actuators) must
- * drive the rc-pi placeholder track cleanly, like the expert on `ideal`.
- * Seeds 1–3 × 3 episodes, as in the README baseline.
+ * drive the placeholder track of both RC builds cleanly, like the expert on
+ * `ideal`. Seeds 1–3 × 3 episodes, as in the README baseline.
  */
-describe.each(['left', 'right'] as const)('RuleBasedAgent as privileged teacher on rc-pi (%s-hand traffic)', (drivingSide) => {
+const CASES = (['rc-pi', 'rc-jetson'] as const).flatMap((profile) => (['left', 'right'] as const).map((side) => [profile, side] as const));
+
+describe.each(CASES)('RuleBasedAgent as privileged teacher on %s (%s-hand traffic)', (profile, drivingSide) => {
   it('completes every episode without collisions, red-light running or curb strikes', () => {
     for (const seed of [1, 2, 3]) {
-      const sim = new Simulation({ seed, profile: 'rc-pi', city: { drivingSide } });
+      const sim = new Simulation({ seed, profile, city: { drivingSide } });
       for (let ep = 0; ep < 3; ep++) {
         expect(sim.spawnEgo()).toBe(true);
         const agent = new RuleBasedAgent();

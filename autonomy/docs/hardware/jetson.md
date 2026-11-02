@@ -3,7 +3,7 @@
 This document specifies the Jetson alternative to the Raspberry Pi 5 build in [`pi.md`](pi.md). The car, the actuation and safety chain, the sensors, the track and the tools stay the same. Only the compute board changes, and with it the power supply, the camera, a few interfaces and the software stack. Read the Pi document first; this one lists what differs.
 
 > [!NOTE]
-> Specifications of named parts are approximate; check the datasheet of the unit you buy. The simulator has no Jetson profile yet (section 7), so every perception and compute number here is a target to measure in Phase C.
+> Specifications of named parts are approximate; check the datasheet of the unit you buy. The simulator's `rc-jetson` profile (section 7) carries estimates until then, so every perception and compute number here is a target to measure in Phase C.
 
 ---
 
@@ -28,7 +28,7 @@ The price is more power, more weight, a 19 V supply and a different software sta
 | Size and mass | Smaller, lighter | About 100 × 79 mm developer kit, heavier |
 | Camera | Camera Module 3 Wide, native | IMX219 or IMX477 CSI cameras, USB cameras or depth cameras (section 4) |
 | Software | Raspberry Pi OS, Python 3.11 | JetPack 6 (Ubuntu 22.04), Python 3.10, CUDA, TensorRT |
-| Sim profile | `rc-pi` | None yet; use `rc-pi` or add `rc-jetson` (section 7) |
+| Sim profile | `rc-pi` | `rc-jetson`, with estimates until measured (section 7) |
 | Pick it when | The cheapest path that matches the current plan exactly | You want bigger models, faster detection, depth cameras or vision-first perception |
 
 ## 2. What stays the same
@@ -115,21 +115,19 @@ The requirements of the Pi document's section 6.5 stay: ≥ 100° horizontal fie
 
 ## 7. Simulation profile
 
-The `rc-pi` profile models the Pi build: a 60 ms compute delay, objects at 10 per second with 100 ms latency, and a 100° camera. A Jetson build is expected to differ in a few values:
+The `rc-jetson` profile ([`rcJetson.ts`](../../../src/sim/platform/profiles/rcJetson.ts)) models this build. It takes the vehicle, the track, the actuation chain and the non-camera sensors from `rc-pi`, and changes only what the GPU changes. Its values are estimates until the board is measured:
 
-| Profile value | `rc-pi` | Jetson expectation (to measure) |
+| Profile value | `rc-pi` | `rc-jetson` (estimate) |
 | :--- | :--- | :--- |
-| `actuators.computeDelay` | 60 ms | Lower, about 20–30 ms with TensorRT |
-| `actuators.delayJitter` | 15 ms | Likely lower |
-| `sensors.objects.rateHz`, `latency` | 10 Hz, 100 ms | 20–30 Hz, lower latency |
-| `sensors.objects.fovDeg`, `range`, `posStd` | 100°, 3 m, 3 cm + 3%/m | Depends on the camera; a depth camera narrows the field of view and lowers the position noise |
-| `sensors.signals.rateHz`, `latency`, `range` | 10 Hz, 100 ms, 5 m | Faster and possibly longer range |
-| Vehicle, actuators (except delays), lidar, localization, ego state | — | Same as `rc-pi` |
+| `actuators.computeDelay` | 60 ms | 25 ms (TensorRT; 20–30 ms expected) |
+| `actuators.delayJitter` | 15 ms | 8 ms |
+| `sensors.objects.rateHz`, `latency` | 10 Hz, 100 ms | 20 Hz, 50 ms |
+| `sensors.signals.rateHz`, `latency` | 10 Hz, 100 ms | 20 Hz, 50 ms |
+| `sensors.objects.fovDeg`, `range`, `posStd` | 100°, 3 m, 3 cm + 3%/m | Same until the camera is chosen; a depth camera narrows the field of view and lowers the position noise |
+| Vehicle, other actuator values, lidar, localization, ego state, track | — | Same as `rc-pi` |
 
-Two ways to handle this:
-
-1. **Keep using `rc-pi`.** Conservative: a model that copes with the Pi's latency and detection rate copes with the Jetson's.
-2. **Add an `rc-jetson` profile.** It would have the same vehicle and track as `rc-pi`, but Jetson perception and compute values, calibrated in Phase C. A new built-in profile is a contract change and extends the sim-to-real plan, so it needs a decision first.
+- The rates take the low end of the expected 20–30 detections per second, as `rc-pi` takes the low end of the Pi's 10–15.
+- Train on `rc-pi` when one model must run on both boards: its delays and detection rate are the harder case.
 
 ## 8. Bill of materials changes
 
@@ -163,4 +161,3 @@ These replace the Pi checklist's first three items; the rest of the Pi checklist
 - Pi or Jetson for the first prototype. The current plan and the `rc-pi` profile assume the Pi.
 - Camera option A, B, C or D.
 - One shared battery or a separate compute battery.
-- Whether to add an `rc-jetson` profile to the simulator (section 7).
