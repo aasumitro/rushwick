@@ -7,6 +7,7 @@ from typing import Any, Callable, Dict, Optional
 
 from .encoder import FEATURE_VERSION
 from .hardware import Hardware
+from .outputs import CommandSink
 from .policy import Policy
 from .safety import Command, Safety
 
@@ -15,9 +16,17 @@ PROTOCOL_VERSION = 1
 PolicyFactory = Callable[[Dict[str, Any]], Policy]
 
 
-async def run(hw: Hardware, make_policy: PolicyFactory, safety: Safety, log: Callable[[str], None] = print, max_messages: Optional[int] = None) -> None:
+async def run(
+    hw: Hardware,
+    make_policy: PolicyFactory,
+    safety: Safety,
+    log: Callable[[str], None] = print,
+    max_messages: Optional[int] = None,
+    sink: Optional[CommandSink] = None,
+) -> None:
     """Serve forever (or `max_messages`, for tests). In lockstep the frame `stamp` is the
-    only clock; in realtime a wall-clock watchdog brakes when frames stop arriving."""
+    only clock; in realtime a wall-clock watchdog brakes when frames stop arriving. Every
+    command also goes to `sink` (the real servo and ESC with --actuate)."""
     hello: Optional[Dict[str, Any]] = None
     policy: Optional[Policy] = None
     last = Command(0.0, 0.0)
@@ -30,8 +39,11 @@ async def run(hw: Hardware, make_policy: PolicyFactory, safety: Safety, log: Cal
         msg = await hw.read_frame(safety.cfg.stale_after if realtime else None)
         handled += 1
         if msg is None:
+            brake = safety.watchdog()
             if last_seq >= 0:
-                await hw.write_command(last_seq, safety.watchdog())
+                await hw.write_command(last_seq, brake)
+            if sink is not None:
+                sink.command(brake, None)
             if not braking:
                 log(f"no frame for {time.monotonic() - started:.3f} s: braking until frames return")
             braking = True
@@ -56,6 +68,8 @@ async def run(hw: Hardware, make_policy: PolicyFactory, safety: Safety, log: Cal
                 last = safety.check(policy.act(msg), msg["observation"])
             last_seq = msg["seq"]
             await hw.write_command(last_seq, last)
+            if sink is not None:
+                sink.command(last, msg)
         elif kind == "disconnected":
             hello, policy, last_seq = None, None, -1
             log(f"Rushwick disconnected; safety interventions so far: {dict(safety.interventions)}")
