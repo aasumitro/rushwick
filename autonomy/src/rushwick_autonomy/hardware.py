@@ -63,7 +63,8 @@ class SimHardware:
 
 
 class RealHardware:
-    """Placeholder for the real car (Phase C): PCA9685 servo and ESC, lidar, IMU, wheel encoder, localization."""
+    """Placeholder for the car on the track: frames from its own lidar, IMU, wheel encoder and localization.
+    On the bench, Rushwick sends the frames and `--actuate` drives the servo and ESC (outputs.py)."""
 
     def __init__(self) -> None:
-        raise NotImplementedError("RealHardware arrives with Phase C (bench actuation and HIL); use --hardware sim")
+        raise NotImplementedError("RealHardware arrives with the track stage; on the bench, use --hardware sim with --actuate")

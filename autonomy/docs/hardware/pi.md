@@ -5,7 +5,7 @@ This document specifies the hardware for the first Rushwick prototype: a 1:10 RC
 An NVIDIA Jetson Orin Nano can replace the Pi: [`jetson.md`](jetson.md) reuses everything in this document except the compute board, its power supply, the camera and a few interfaces.
 
 > [!NOTE]
-> Every `rc-pi` value is an assumption until Phase C measures it. Treat the numbers below as targets: pick hardware that meets or beats them, measure what you built, and write the measured values into `rcPi.ts` with the date and the method next to each one. Specifications of named parts are approximate; check the datasheet of the unit you buy.
+> Every `rc-pi` value is an assumption until the hardware-in-the-loop measurements ([`hil.md`](../hil.md)) replace it. Treat the numbers below as targets: pick hardware that meets or beats them, measure what you built, and write the measured values into `rcPi.ts` with the date and the method next to each one. Specifications of named parts are approximate; check the datasheet of the unit you buy.
 
 ---
 
@@ -37,8 +37,8 @@ The Pi never drives the servo or the ESC directly. Every command passes the car 
 
 | Stage | Plan items | What happens | Hardware |
 | :--- | :--- | :--- | :--- |
-| Bench HIL | Batches 15–16 (C1–C3) | The Pi runs the car program against Rushwick in real time. With `--actuate` the commands also drive the servo and the ESC, with the wheels off the ground. | Chassis with servo, ESC and motor; Pi 5 with cooling and power; PCA9685; hardware watchdog; RC kill switch; Ethernet; bench stand; measurement tools |
-| Track runs | Phase D | The car drives the physical twin of a Rushwick city and rebuilds the observation from its own sensors. | Everything above, plus wheel encoder, IMU, lidar, camera, localization and the track |
+| Bench HIL | [`hil.md`](../hil.md) | The Pi runs the car program against Rushwick in real time. With `--actuate` the commands also drive the servo and the ESC, with the wheels off the ground. | Chassis with servo, ESC and motor; Pi 5 with cooling and power; PCA9685; hardware watchdog; RC kill switch; Ethernet; bench stand; measurement tools |
+| Track runs | Track stage | The car drives the physical twin of a Rushwick city and rebuilds the observation from its own sensors. | Everything above, plus wheel encoder, IMU, lidar, camera, localization and the track |
 
 In HIL the observation still comes from the simulation, so the bench stage needs no lidar, camera, IMU, encoder or localization. Two calibrations need the car on the floor: the steering-center error (a straight-line test) and, later, the longitudinal response.
 
@@ -107,7 +107,7 @@ A 1:10 on-road **touring car** matches the profile's footprint almost exactly.
 | :--- | :--- |
 | Board | PCA9685 16-channel, 12-bit PWM over I2C, default address `0x40` |
 | Frequency | 50 Hz (20 ms frame), 1000–2000 µs pulses, 1500 µs neutral |
-| Channel map | Proposal: ch0 steering servo, ch1 ESC (to be confirmed before batch 15) |
+| Channel map | ch0 steering servo, ch1 ESC ([`configs/pi.json`](../../configs/pi.json)) |
 | Resolution | 4096 steps per 20 ms = 4.9 µs per step, about 0.004 rad of steering, finer than the 0.02 steering deadband |
 | Calibration knob | The internal oscillator (nominally 25 MHz) is off by a few percent from board to board. Measure a commanded 1500 µs pulse with a logic analyzer and correct the reference clock in a config value, not a constant |
 | Output enable | Wire the active-low OE pin to the hardware watchdog (5.4) |
@@ -130,7 +130,7 @@ A 1:10 on-road **touring car** matches the profile's footprint almost exactly.
 - Failsafe: neutral on signal loss within 100 ms. Verify this on the bench; the hardware watchdog relies on it.
 - BEC: ≥ 3 A at 6 V for the servo.
 
-The ESC takes throttle, not acceleration. `RealHardware` therefore needs a small longitudinal controller (feed-forward plus PI on the encoder speed) that turns the commanded acceleration into throttle. Phase C then measures the lag (`accelTimeConstant`, assumed 0.15 s) and the deadband (`accelDeadband`, assumed 0.1 m/s²) of the result.
+The ESC takes throttle, not acceleration. `RealHardware` therefore needs a small longitudinal controller (feed-forward plus PI on the encoder speed) that turns the commanded acceleration into throttle. With the wheel encoder (track stage), measure the lag (`accelTimeConstant`, assumed 0.15 s) and the deadband (`accelDeadband`, assumed 0.1 m/s²) of the result.
 
 ### 5.4 Safety chain
 
@@ -286,7 +286,7 @@ The current `rc-pi` world preset is a placeholder until the room is measured. At
   - AprilTags for the overhead camera.
   - No raised curbs are needed.
 - **Traffic lights (later):** small red, yellow and green LED lights at the stop lines, driven by a microcontroller (for example an ESP32 or a Pico W) in sync with Rushwick's fixed-time signal plan. The placeholder track has no signals, so they wait for a larger grid.
-- **Exact layout:** the Phase D track export (`track:export`, an SVG at real scale) will give the exact positions for taping.
+- **Exact layout:** the track stage's track export (`track:export`, an SVG at real scale) will give the exact positions for taping.
 
 ## 8. Network and laptop
 
@@ -294,7 +294,7 @@ The current `rc-pi` world preset is a placeholder until the room is measured. At
   - Node.js 22.12 or newer for Rushwick;
   - Python 3.9+ in a virtualenv for the car program and the localizer;
   - a Gigabit Ethernet port, or a USB adapter.
-- **HIL (Phase C):** a direct Ethernet cable between the laptop and the Pi. Measure Wi-Fi separately (risk R6).
+- **HIL ([`hil.md`](../hil.md)):** a direct Ethernet cable between the laptop and the Pi. Measure Wi-Fi separately (risk R6).
 - **Track runs:** a Wi-Fi 5 access point. The car drives on its own; the laptop sends localization and monitors through the browser Remote agent and the logs.
 - **Addressing:** a static IP or `raspberrypi.local` (mDNS).
 
@@ -341,22 +341,23 @@ The current `rc-pi` world preset is a placeholder until the room is measured. At
 | 26 | Traffic lights | LED lights and a microcontroller (later, larger track) | — | Later |
 | 27 | AI accelerator | AI HAT+ or AI Camera (optional; changes the compute delay) | — | Optional |
 
-## 11. Checklist before batch 15
+## 11. Checklist before the first HIL run
 
-- [ ] The Pi 5 boots Raspberry Pi OS 64-bit, `pip install -e "autonomy[onnx]"` works, the CPU governor is `performance`, and the Ethernet link to the laptop is up.
+The procedure, with every command, is in [`hil.md`](../hil.md).
+
+- [ ] The Pi 5 boots Raspberry Pi OS 64-bit, `pip install -e "autonomy[pi,onnx,test]"` works and `pytest autonomy/tests` passes, the CPU governor is `performance`, and the Ethernet link to the laptop is up.
 - [ ] `vcgencmd get_throttled` reads `0x0` after 10 minutes of full CPU load with the cooler.
 - [ ] `i2cdetect -y 1` shows the PCA9685 at `0x40`, and after clock calibration a commanded 1500 µs pulse measures within ±5 µs.
 - [ ] The servo centers, reaches ≥ 0.45 rad each way without binding, and a positive command steers left.
 - [ ] The ESC is in forward/brake mode with drag brake 0%, its neutral is calibrated, and it falls back to neutral on signal loss.
 - [ ] Stopping the heartbeat disables the PCA9685 outputs within 100 ms.
 - [ ] The RC kill switch cuts the throttle within 100 ms, and manual override works.
-- [ ] The channel map is written down (proposal: ch0 steering, ch1 throttle).
+- [ ] The wiring follows the channel map in `configs/pi.json`: ch0 steering, ch1 throttle.
 - [ ] The car sits on the bench stand, and the LiPo safety gear is in place.
 
 ## 12. Open decisions
 
 - Compute board: Raspberry Pi 5 (this document) or Jetson Orin Nano ([`jetson.md`](jetson.md)).
-- PCA9685 channel map (proposal: ch0 steering, ch1 throttle).
 - Motor type: sensored brushless or brushed.
 - Localization: option A (overhead camera) or B (AprilTags around the track). Q3 suggests starting with A.
 - Room size (Q4): it fixes the final track preset and the overhead camera's height and lens.

@@ -1,5 +1,5 @@
 {
-  "notes": "Raspberry Pi 5 build (docs/hardware/pi.md). Pulse widths and the oscillator are assumed until the bench calibration (PLAN-hardware P3); re-measure and update them on the real car.",
+  "notes": "Raspberry Pi 5 build (docs/hardware/pi.md). Pulse widths and the oscillator are assumed until the bench calibration in docs/hil.md section 6; write the measured values and the date here.",
   "board": "raspberry-pi-5",
   "i2c": { "backend": "smbus2", "bus": 1, "address": 64 },
   "pwm": { "frequency_hz": 50, "oscillator_hz": 25000000 },
