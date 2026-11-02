@@ -155,6 +155,6 @@ The procedure, with every command, is in [`hil.md`](../hil.md). These replace th
 
 ## 10. Open decisions
 
-- Pi or Jetson for the first prototype. The current plan and the `rc-pi` profile assume the Pi.
+- Which board drives the first track runs. Both builds go ahead in parallel; [`comparison.md`](comparison.md) recommends the Pi until the measurements say otherwise.
 - Camera option A, B, C or D.
 - One shared battery or a separate compute battery.

@@ -22,10 +22,11 @@ Rushwick generates a busy procedural city with arterial roads, signalized inters
 - **Pedestrians.** They walk the sidewalk network, cross on the walk signal, and sometimes jaywalk.
 - **Ego vehicle.** A kinematic bicycle model with acceleration, braking and steering-rate limits.
 - **Model interface.** A structured observation (route, next signal, nearby road users, 2D lidar), a 258-float feature encoder, and a one-method `DrivingAgent` interface.
-- **Platform profiles.** Emulate a 1:10 RC car on a Raspberry Pi or a passenger car: noisy, delayed and occluded sensors, delayed and lagging actuators, and a limited control rate. The default `ideal` profile keeps exact sensing.
+- **Platform profiles.** Emulate a 1:10 RC car on a Raspberry Pi or a Jetson, or a passenger car: noisy, delayed and occluded sensors, delayed and lagging actuators, and a limited control rate. The default `ideal` profile keeps exact sensing.
 - **Evaluation.** Episode outcomes, safety and comfort metrics, and a composite driving score.
 - **Reproducibility.** The same `(config, seed)` always produces the same episode, in the browser, in tests and in Node.
 - **Datasets.** The headless runner records `(features, action)` pairs from the rule-based expert as JSON Lines.
+- **Software- and hardware-in-the-loop.** A reference driving stack in Python drives the simulator over a WebSocket bridge, from a laptop or from the car's own computer, and can drive the real servo and ESC on the bench.
 
 ---
 
@@ -267,6 +268,29 @@ With a car program running, open the app, pick **Remote (WebSocket)** as the dec
 
 ---
 
+## Hardware-in-the-Loop
+
+Rushwick Autonomy runs unchanged on the car's computer, a Raspberry Pi 5 or an NVIDIA Jetson Orin Nano. Rushwick keeps simulating the car and sends frames in real time over Ethernet; the board computes every command as it will on the track. With `--actuate` it also drives the real servo and ESC on the bench, with the wheels off the ground, behind an RC kill switch and a hardware watchdog.
+
+```sh
+# on the board
+rushwick-autonomy --hardware sim --policy simple --config autonomy/configs/pi.json --log runs/pi-board.jsonl
+# on the laptop
+npm run sim:bridge -- --url ws://rushwick-pi.local:8765 --mode realtime --profile rc-pi --minutes 30 --log runs/pi-bridge.jsonl
+```
+
+| Tool | Purpose |
+| :--- | :--- |
+| `--config autonomy/configs/<board>.json` | Board config: I2C bus, PWM calibration, steering and throttle pulses, heartbeat pin, system stats, ONNX execution providers |
+| `--actuate --i-have-a-kill-switch` | Mirrors every safe command to the servo and the ESC. Steering follows the command; the throttle follows the simulated speed (no wheel encoder yet) |
+| `--log FILE`, `python -m rushwick_autonomy.report` | Frame and policy timings, watchdog brakes and 1 Hz board stats, joined with the `sim:bridge --log` of the same run |
+| `python -m rushwick_autonomy.bench` | Times a perception model at the camera rate on the board's execution providers, next to the loop |
+| `python -m rushwick_autonomy.calibrate` | Bench calibration: pulse widths, steering deadband, actuation-delay video |
+
+The procedure, from board setup to writing measured values back into the profiles, is in [`autonomy/docs/hil.md`](autonomy/docs/hil.md). [`autonomy/docs/hardware/comparison.md`](autonomy/docs/hardware/comparison.md) compares the Pi and Jetson builds; until they are measured, it holds the profiles' assumptions and estimates and recommends the Pi for the first track runs.
+
+---
+
 ## Metrics & Scoring
 
 Every episode ends with exactly one outcome:
@@ -429,6 +453,7 @@ Project rules for contributors and coding agents live in [`AGENTS.md`](AGENTS.md
 - A model trained only in Rushwick learns the rules of Rushwick. Measure the sim-to-real gap separately.
 - Platform perception errors are independent per sample: no tracking ID switches, ghost objects or lights that stay misread. The map is perfect, and there are no camera images, lidar reflections or 3D effects.
 - Sensor latency and command delay are quantized to the 33 ms physics step.
+- Hardware-in-the-loop has no wheel encoder yet: on the bench the throttle mirrors the simulated speed, and `accelDeadband` and `accelTimeConstant` stay assumed until the track stage.
 - The 2D lidar sees block outlines (curbs) as rectangles with square corners. When the ego cuts a rounded corner, its center can be inside such a rectangle, and every ray then reads 0 (or the profile's minimum range). That is why the reference car program's lidar stop is off in SIL.
 
 ---
