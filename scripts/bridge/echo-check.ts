@@ -3,7 +3,7 @@
  * privileged teacher's action from every frame, so a lockstep bridge run must
  * reproduce an in-process run of the same teacher bit for bit: same metrics,
  * same stateHash(). Use `ideal` (scale 1) so the unit round trip is exact.
- *   python -m rushwick_onboard --hardware sim --policy echo &
+ *   rushwick-autonomy --hardware sim --policy echo &
  *   npm run sim:echo-check -- --seed 3
  */
 import { parseArgs } from 'node:util';

@@ -1,7 +1,7 @@
 /**
  * Encoder golden vectors for car programs in other languages:
  *   npm run sim:golden
- * Writes onboard/tests/golden/encoder-v<FEATURE_VERSION>.json with sensed
+ * Writes autonomy/tests/golden/encoder-v<FEATURE_VERSION>.json with sensed
  * observations (sim units, plus real units where the scale is not 1) and the
  * features encodeObservation() makes of them. Deterministic: rerunning it
  * reproduces the file byte for byte.
@@ -48,7 +48,7 @@ for (const { profile, seed } of RUNS) {
   }
 }
 
-const path = new URL(`../onboard/tests/golden/encoder-v${FEATURE_VERSION}.json`, import.meta.url);
+const path = new URL(`../autonomy/tests/golden/encoder-v${FEATURE_VERSION}.json`, import.meta.url);
 const header = { featureVersion: FEATURE_VERSION, protocol: PROTOCOL_VERSION, generator: 'npm run sim:golden', units: 'observation: sim units; real: wire units (observation divided by scale)' };
 const body = `${JSON.stringify(header).slice(0, -1)},"cases":[\n${cases.map((c) => JSON.stringify(c)).join(',\n')}\n]}\n`;
 writeFileSync(path, body);

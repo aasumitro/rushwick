@@ -2,8 +2,8 @@ import math
 
 import pytest
 
-from rushwick_onboard import encode_observation
-from rushwick_onboard.units import observation_to_real, observation_to_sim
+from rushwick_autonomy import encode_observation
+from rushwick_autonomy.units import observation_to_real, observation_to_sim
 
 
 def scaled_cases(golden):

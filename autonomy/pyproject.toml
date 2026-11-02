@@ -3,9 +3,9 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "rushwick-onboard"
+name = "rushwick-autonomy"
 version = "0.1.0"
-description = "Reference car program for Rushwick: drives the simulator over the bridge now, the real car later"
+description = "Rushwick Autonomy: the driving stack that runs on the vehicle, against the Rushwick simulator now and the real car later"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.9"
@@ -15,8 +15,11 @@ dependencies = ["websockets>=13", "numpy>=1.24"]
 onnx = ["onnxruntime>=1.16"]
 test = ["pytest>=8"]
 
-[tool.setuptools]
-packages = ["rushwick_onboard"]
+[project.scripts]
+rushwick-autonomy = "rushwick_autonomy.cli:run_cli"
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -209,7 +209,7 @@ The program that will drive the real car can drive Rushwick instead, over a WebS
 - Units on the wire are real. Lengths, speeds and accelerations are divided by the profile's scale (10 for `rc-pi`); command accelerations are multiplied back. Angles, yaw rates, times and normalized steering are unchanged.
 - Numbers that are not finite, such as an unknown `timeLeft`, travel as `null`.
 - On frames without `controlTick` the platform ignores new commands, so the car program resends its last one.
-- To encode features like `encodeObservation()`, a car program converts the observation back to sim units and uses the `sensors` config from `hello`. [`onboard/tests/golden/encoder-v1.json`](onboard/tests/golden/encoder-v1.json) holds golden vectors to test such an encoder against: sensed observations from every profile (sim units, plus the wire form for `rc-pi`) and their exact features. `npm run sim:golden` regenerates it, byte for byte.
+- To encode features like `encodeObservation()`, a car program converts the observation back to sim units and uses the `sensors` config from `hello`. [`autonomy/tests/golden/encoder-v1.json`](autonomy/tests/golden/encoder-v1.json) holds golden vectors to test such an encoder against: sensed observations from every profile (sim units, plus the wire form for `rc-pi`) and their exact features. `npm run sim:golden` regenerates it, byte for byte.
 - Field names follow ROS 2 (`sensor_msgs/LaserScan`, `sensor_msgs/Imu`, `nav_msgs/Odometry`), so a later ROS 2 bridge is a 1:1 mapping.
 
 Start a car program that listens on a WebSocket, then let it drive:
@@ -235,25 +235,27 @@ npm run sim:bridge -- --url ws://localhost:8765 --mode lockstep --profile rc-pi 
 
 The run ends with the episode report, the round-trip latency (p50, p95, p99), deadline misses (a control-tick command that missed its control period), watchdog trips and the final `stateHash()`.
 
-### Reference car program
+### Rushwick Autonomy: the reference driving stack
 
-[`onboard/`](onboard/) holds a reference car program in Python, `rushwick_onboard`. It is the program that will later run on the Raspberry Pi: only its hardware backend changes. A safety layer always sits between its policy and the hardware: steering clamp, speed cap, lidar stop and a stale-frame watchdog.
+[`autonomy/`](autonomy/) holds Rushwick Autonomy (`rushwick-autonomy`), a reference car program in Python. It is the driving stack that will later run on the vehicle's computer: only its hardware backend changes. A safety layer always sits between its policy and the hardware: steering clamp, speed cap, lidar stop and a stale-frame watchdog.
 
 ```sh
 python3 -m venv .venv && . .venv/bin/activate
-pip install -e "onboard[test]"
-python -m rushwick_onboard --hardware sim --policy simple          # terminal 1: the car program
+pip install -e "autonomy[test]"
+rushwick-autonomy --hardware sim --policy simple                   # terminal 1: the driving stack
 npm run sim:bridge -- --mode lockstep --profile rc-pi --episodes 3  # terminal 2: Rushwick drives it
-pytest onboard/tests                                                # encoder golden vectors, units, safety, loop
+pytest autonomy/tests                                               # encoder golden vectors, units, safety, loop
 ```
 
 | Policy | What it does |
 | :--- | :--- |
 | `simple` | Pure-pursuit lane keeping at 60% of the posted limit; stops for red, yellow and unknown lights and for road users in its lane |
 | `echo` | Returns the privileged teacher's action from each frame (`sim:bridge --teacher`); reproduces an in-process expert run bit for bit |
-| `onnx:<path>` | A trained model: encodes the observation like `encodeObservation()`; needs `pip install -e "onboard[onnx]"` |
+| `onnx:<path>` | A trained model: encodes the observation like `encodeObservation()`; needs `pip install -e "autonomy[onnx]"` |
 
-The lidar stop is off by default in SIL (`--no-lidar-stop`), because the simulated 2D lidar sees curbs as walls, see [Known Limitations](#known-limitations).
+The lidar stop is off by default in SIL (`--no-lidar-stop`), because the simulated 2D lidar sees curbs as walls, see [Known Limitations](#known-limitations). `python -m rushwick_autonomy` works as well as the `rushwick-autonomy` command.
+
+The hardware for the 1:10 prototype, sensors included, is specified for two compute boards: [Raspberry Pi 5](autonomy/docs/hardware/pi.md) and [NVIDIA Jetson Orin Nano](autonomy/docs/hardware/jetson.md).
 
 ### Watch a car program drive in the browser
 
@@ -377,7 +379,7 @@ src/
   bridge/              bridge protocol v1 to a car program: messages, validators, real ↔ sim units
   ui/                  React app: fixed-step loop, input, hooks, panels
 scripts/               headless runner, JSONL dataset recorder, bridge runner, encoder golden export
-onboard/               reference car program in Python (rushwick_onboard): loop, policies, safety layer, encoder port
+autonomy/              Rushwick Autonomy, the reference driving stack in Python (src/rushwick_autonomy): loop, policies, safety layer, encoder port
 ```
 
 ### Design Principles
@@ -397,11 +399,11 @@ npm run build        # typecheck + production bundle in dist/
 npm test             # Vitest: geometry, city generation, signals, traffic, determinism, encoder, expert agent
 npm run test:watch   # Vitest in watch mode
 npm run preview      # serve the production build
-pytest onboard/tests # the reference car program (after pip install -e "onboard[test]")
-npm run sim:echo-check -- --seed 3   # SIL echo check against a running `python -m rushwick_onboard --policy echo`
+pytest autonomy/tests   # the reference driving stack (after pip install -e "autonomy[test]")
+npm run sim:echo-check -- --seed 3   # SIL echo check against a running `rushwick-autonomy --policy echo`
 ```
 
-CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every push to `main` and on every pull request. One job runs the typecheck, build and tests. A second job tests the car program with pytest and runs the SIL echo check: the car program echoes the privileged teacher over the bridge, and the run must match an in-process run of the same teacher bit for bit (same metrics, same `stateHash()`).
+CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) runs on every push to `main` and on every pull request. One job runs the typecheck, build and tests. A second job tests the driving stack in `autonomy/` with pytest and runs the SIL echo check: the driving stack echoes the privileged teacher over the bridge, and the run must match an in-process run of the same teacher bit for bit (same metrics, same `stateHash()`).
 
 ---
 

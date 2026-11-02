@@ -1,4 +1,4 @@
-"""python -m rushwick_onboard --hardware sim --listen 0.0.0.0:8765 --policy simple"""
+"""Command line: rushwick-autonomy --hardware sim --listen 0.0.0.0:8765 --policy simple"""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ def policy_factory(spec: str) -> PolicyFactory:
 
 
 def parse_args(argv: Optional[List[str]]) -> argparse.Namespace:
-    p = argparse.ArgumentParser(prog="python -m rushwick_onboard", description="Reference car program for Rushwick.")
+    p = argparse.ArgumentParser(prog="rushwick-autonomy", description="Rushwick Autonomy: the driving stack that runs on the vehicle.")
     p.add_argument("--hardware", choices=["sim", "real"], default="sim", help="sim: Rushwick connects over WebSocket; real: the car (Phase C)")
     p.add_argument("--listen", default="0.0.0.0:8765", help="host:port to listen on with --hardware sim")
     p.add_argument("--policy", default="simple", help="echo | simple | onnx:<path> (default simple)")
@@ -46,11 +46,12 @@ async def main(argv: Optional[List[str]] = None) -> None:
     await hw.start()
     lidar_stop = args.hardware == "real" if args.lidar_stop is None else args.lidar_stop
     safety = Safety(SafetyConfig(max_speed=args.max_speed, lidar_stop=lidar_stop))
-    print(f"rushwick_onboard: listening on ws://{host}:{port} with policy {args.policy} (lidar stop {'on' if lidar_stop else 'off'})", flush=True)
+    print(f"rushwick-autonomy: listening on ws://{host}:{port} with policy {args.policy} (lidar stop {'on' if lidar_stop else 'off'})", flush=True)
     await run(hw, make_policy, safety, log=lambda s: print(s, flush=True))
 
 
-if __name__ == "__main__":
+def run_cli() -> None:
+    """Entry point of the `rushwick-autonomy` console script and of `python -m rushwick_autonomy`."""
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

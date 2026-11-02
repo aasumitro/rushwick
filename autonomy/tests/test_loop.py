@@ -1,8 +1,8 @@
 import asyncio
 
-from rushwick_onboard import Command, Safety, SafetyConfig
-from rushwick_onboard.loop import run
-from rushwick_onboard.safety import FULL_BRAKE
+from rushwick_autonomy import Command, Safety, SafetyConfig
+from rushwick_autonomy.loop import run
+from rushwick_autonomy.safety import FULL_BRAKE
 
 HELLO = {"type": "hello", "protocol": 1, "featureVersion": 1, "profile": "rc-pi", "scale": 10, "mode": "lockstep", "controlHz": 20}
 OBS = {"ego": {"speed": 0.5, "length": 0.45}, "route": {"speedLimit": 1.4}, "lidar": [12.0] * 32}

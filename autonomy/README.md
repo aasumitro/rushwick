@@ -1,17 +1,28 @@
-# rushwick_onboard
+# Rushwick Autonomy
 
-Reference car program for [Rushwick](../README.md). The same program drives the simulator over the bridge (software-in-the-loop) and, once the hardware backend exists, the real car: only `--hardware` changes.
+`rushwick-autonomy` is the reference driving stack for [Rushwick](../README.md): the program that runs on the vehicle. It drives the simulator over the bridge now (software-in-the-loop) and the real car later; only `--hardware` changes.
 
 ```sh
 python3 -m venv .venv && . .venv/bin/activate
-pip install -e "onboard[test]"          # add ,onnx for OnnxPolicy
-python -m rushwick_onboard --hardware sim --listen 0.0.0.0:8765 --policy simple
+pip install -e "autonomy[test]"          # add ,onnx for OnnxPolicy
+rushwick-autonomy --hardware sim --listen 0.0.0.0:8765 --policy simple   # or: python -m rushwick_autonomy
 ```
 
 Then let Rushwick connect, for example `npm run sim:bridge -- --mode lockstep --profile rc-pi --episodes 3`.
 
+## Layout
+
+```
+autonomy/
+  pyproject.toml          package rushwick-autonomy, console script rushwick-autonomy
+  src/rushwick_autonomy/  the package (src layout)
+  tests/                  pytest suite and the encoder golden vectors (tests/golden/)
+  docs/hardware/          prototype hardware: Raspberry Pi 5 (pi.md) or Jetson Orin Nano (jetson.md)
+```
+
 | Module | Role |
 | :--- | :--- |
+| `cli.py` | Command line: hardware backend, listen address, policy, speed cap, lidar stop |
 | `hardware.py` | `Hardware` protocol; `SimHardware` is the WebSocket server Rushwick connects to; `RealHardware` is a stub until Phase C |
 | `loop.py` | Runs the policy on control-tick frames and resends the last command otherwise; the frame `stamp` is the clock in lockstep, a 200 ms wall-clock watchdog brakes in realtime |
 | `policy.py` | `EchoPolicy` (returns the frame's teacher action, for the SIL echo check) and `OnnxPolicy` (a trained model) |
@@ -23,4 +34,4 @@ Policies get frames in real units and return commands in real units. `OnnxPolicy
 
 The lidar stop defaults to off with `--hardware sim`: the simulated 2D lidar sees curbs as walls (block outlines), and a car turning a corner crosses them. On the real car it defaults to on. Override with `--lidar-stop` / `--no-lidar-stop`.
 
-Run the tests with `pytest onboard/tests`. Python 3.9 or newer.
+Run the tests with `pytest autonomy/tests`. Python 3.9 or newer.
